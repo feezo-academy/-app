@@ -22,7 +22,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Cloudflare Turnstile CAPTCHA -->
+<!-- Captcha teporarily disaled
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+-->
 <!-- Supabase Client -->
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -10093,9 +10095,17 @@ async function saveUser() {
                 assigned_batches: getSelectedBatchAssignments(),
                 assigned_sports: getSelectedSportAssignments() }
       });
-      if (error) throw new Error(error.message || 'Failed to create user');
+      if (error) {
+      let realMsg = error.message || 'Failed to create user';
+      if (error.context && typeof error.context.json === 'function') {
+      try {
+      const body = await error.context.json();
+      if (body && body.error) realMsg = body.error;
+      } catch(_) { /* response wasn't JSON — keep generic message */ }
+      }
+      throw new Error(realMsg);
+      }
       if (data && data.error) throw new Error(data.error);
-
       // Profile is created server-side by the function; reflect locally
       DB.users.push({ id:uid, uid: data && data.uid, email, name:name||email, role, assignedBatches: getSelectedBatchAssignments(), assignedSports: getSelectedSportAssignments() });
       addLog('user', `Added user "${email}" (${role})`);
