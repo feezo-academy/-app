@@ -31,8 +31,9 @@
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
   // ── YOUR SUPABASE CONFIG (anon key is public — RLS protects the data) ──
-   const SUPABASE_URL = 'https://bwrvhrxfacoiheetistl.supabase.co';
-   const SUPABASE_ANON_KEY = 'sb_publishable_3FY3aWZ4mScvAsThTGOzlA_PQNzOWeB';
+  const SUPABASE_URL = 'https://bwrvhrxfacoiheetistl.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_3FY3aWZ4mScvAsThTGOzlA_PQNzOWeB';
+  
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -271,7 +272,7 @@ tr:hover td{background:var(--card2);}
 .confirm-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:300px;text-align:center;}
 .confirm-icon{font-size:36px;margin-bottom:10px;}
 .confirm-title{font-size:16px;font-weight:700;margin-bottom:6px;}
-.confirm-msg{font-size:13px;color:var(--gray);margin-bottom:18px;line-height:1.5;white-space:pre-line;}
+.confirm-msg{font-size:13px;color:var(--gray);margin-bottom:18px;line-height:1.5;}
 .confirm-btns{display:flex;gap:10px;}
 .confirm-btns button{flex:1;padding:11px;border-radius:8px;border:none;font-size:14px;font-weight:600;}
 
@@ -320,6 +321,9 @@ tr:hover td{background:var(--card2);}
 .fee-row:last-child{border-bottom:none;}
 .fee-name{flex:1;font-size:13px;font-weight:600;line-height:1.3;}
 
+/* BATCH CHIPS */
+.batch-chips{display:flex;gap:7px;flex-wrap:wrap;padding-bottom:4px;margin-bottom:10px;}
+.batch-chips::-webkit-scrollbar{display:none;}
 .batch-chip{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--gray);font-size:11px;font-weight:600;background:var(--card);cursor:pointer;transition:all .12s;white-space:nowrap;}
 .batch-chip.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
 .att-res-tab.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
@@ -787,7 +791,14 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
         </div>
       </div>
 
-
+      <!-- Hidden stubs kept for legacy JS compatibility -->
+      <div style="display:none;">
+        <span id="studentFilterActiveIndicator"></span>
+        <span id="studentFilterChevron"></span>
+        <button id="studentFilterToggleBtn"></button>
+        <div id="studentFilterBody"><input type="text" id="filterStudentName"><input type="text" id="filterStudentSchool"></div>
+        <div id="studentBatchChips"></div>
+      </div>
 
       <!-- MULTI-SELECT TOOLBAR -->
       <div id="studentSelectToolbar" style="display:none;background:var(--accent);border:1px solid var(--accent2);border-radius:10px;padding:9px 12px;margin-bottom:8px;display:none;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -837,8 +848,6 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
             <option value="roll_desc">Roll No ↓</option>
             <option value="name_az">Name A→Z</option>
             <option value="name_za">Name Z→A</option>
-            <option value="present_first">Present First</option>
-            <option value="absent_first">Absent First</option>
           </select>
         </div>
       </div>
@@ -892,6 +901,8 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
       </div>
 
       <!-- Hidden compat elements -->
+      <select id="attStatusFilter" style="display:none;"><option value="all">All Status</option><option value="present">Present</option><option value="absent">Absent</option></select>
+      <div class="batch-chips" id="attBatchChips" style="display:none;"></div>
       <div id="attSummaryBar"></div>
       <div id="attListWrap" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding-bottom:90px;" onscroll="updateScrollArrow('attListWrap','attScrollArrow'); handleAttListScroll(this)"></div>
       <button id="attScrollArrow" onclick="scrollListBottom('attListWrap')" title="Scroll to bottom" aria-label="Scroll to bottom"
@@ -986,6 +997,7 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
       </div>
 
       <!-- Hidden compat -->
+      <div class="batch-chips" id="feeBatchChips" style="display:none;"></div>
       <div id="feeListWrap" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding-bottom:90px;" onscroll="handleFeeListScroll(this)"></div>
     </div>
 
@@ -1014,6 +1026,15 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
         <select class="form-select" id="enqFilterStaff" onchange="renderEnquiryList()" style="flex:1;min-width:100px;font-size:12px;padding:7px 9px;display:none;">
           <option value="">👥 All Staff</option>
         </select>
+      </div>
+      <!-- Hidden compat (reminder-date filter + indicators kept so existing JS doesn't break) -->
+      <div style="display:none;">
+        <input type="date" id="enqFilterReminderDate" onchange="renderEnquiryList()">
+        <span id="enqFilterActiveIndicator"></span>
+        <span id="enqFilterChevron"></span>
+        <button id="enqFilterToggleBtn"></button>
+        <div id="enqFilterBody"></div>
+        <div id="enqStaffFilterRow"></div>
       </div>
       <!-- Active / Archive toggle (admin only) -->
       <div id="enqViewToggle" style="display:none;gap:7px;margin-bottom:10px;">
@@ -1636,40 +1657,27 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
     <div class="modal-title">⬆️ Import Fees<button class="modal-close" onclick="closeModal('modalFeeImport')">×</button></div>
     <div style="background:var(--card2);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--gray);line-height:1.7;">
       <div style="font-weight:700;color:var(--gold);margin-bottom:6px;">📋 Required CSV/Excel format:</div>
-      <div style="font-family:monospace;font-size:11px;background:var(--royal);padding:8px;border-radius:6px;margin-bottom:8px;overflow-x:auto;white-space:nowrap;">Name, RollNo, Sport, Batch, Eligible Month, Status, Amount, Method, PaidDate, Collected By</div>
+      <div style="font-family:monospace;font-size:11px;background:var(--royal);padding:8px;border-radius:6px;margin-bottom:8px;overflow-x:auto;white-space:nowrap;">Name, RollNo, Sport, Month, Status, Amount, Method, PaidDate</div>
       <div>• <b>Name</b> or <b>RollNo</b> required to identify the student.</div>
-      <div>• <b>Sport</b> and <b>Batch</b> must exactly match ones set up for this academy.</div>
-      <div>• <b>Eligible Month</b> format: <b>YYYY-MM</b> (e.g. 2025-06). Student must already be enrolled and active as of that month.</div>
+      <div>• <b>Month</b> format: <b>YYYY-MM</b> (e.g. 2025-06)</div>
       <div>• <b>Status</b>: <b>paid</b> or <b>unpaid</b></div>
       <div>• <b>Amount</b>: number (e.g. 1500). Optional.</div>
-      <div>• <b>Method</b>: <b>cash</b>, <b>upi</b>, or <b>other</b>. Any other text is stored as "other". Optional.</div>
+      <div>• <b>Method</b>: Cash / UPI / Card etc. Optional.</div>
       <div>• <b>PaidDate</b>: <b>DD/MM/YYYY</b>. Optional.</div>
-      <div>• <b>Collected By</b>: name or email of the admin/staff who collected it. Leave blank to use your own account.</div>
       <div>• First row treated as header and skipped.</div>
     </div>
     <input type="file" id="feeImportFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFeeImportFile(event)">
     <button class="btn btn-gold" style="width:100%;padding:12px;margin-bottom:8px;" onclick="downloadFeeImportTemplate()">📄 Download Excel Template</button>
     <button class="btn btn-outline" style="width:100%;padding:12px;margin-bottom:10px;" onclick="document.getElementById('feeImportFileInput').click()">📂 Choose CSV or Excel File</button>
+    <div id="feeImportPreview" style="display:none;">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;" id="feeImportPreviewLabel"></div>
+      <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;" id="feeImportPreviewList"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('feeImportFileInput').click()">🔄 Change File</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="confirmFeeImport()">✅ Import All</button>
+      </div>
+    </div>
     <div id="feeImportError" style="display:none;color:#f87171;font-size:12px;padding:8px;background:#f8717120;border-radius:6px;"></div>
-  </div>
-</div>
-
-<!-- FEE IMPORT REVIEW / SUBMIT -->
-<div class="modal-overlay" id="modalFeeImportResults">
-  <div class="modal">
-    <div class="modal-title">📋 Review Import<button class="modal-close" onclick="closeModal('modalFeeImportResults')">×</button></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;" id="feeResultTabs">
-      <button class="btn btn-outline btn-sm att-res-tab" id="feeResTabBtn-insert" onclick="showFeeImportResultList('insert')" style="padding:10px 6px;">✅ Insert<br><span style="font-size:16px;font-weight:800;" id="feeResCount-insert">0</span></button>
-      <button class="btn btn-outline btn-sm att-res-tab" id="feeResTabBtn-update" onclick="showFeeImportResultList('update')" style="padding:10px 6px;">🔄 Update<br><span style="font-size:16px;font-weight:800;" id="feeResCount-update">0</span></button>
-      <button class="btn btn-outline btn-sm att-res-tab" id="feeResTabBtn-skip" onclick="showFeeImportResultList('skip')" style="padding:10px 6px;">⏭️ Skip<br><span style="font-size:16px;font-weight:800;" id="feeResCount-skip">0</span></button>
-      <button class="btn btn-outline btn-sm att-res-tab" id="feeResTabBtn-reject" onclick="showFeeImportResultList('reject')" style="padding:10px 6px;">❌ Rejected<br><span style="font-size:16px;font-weight:800;" id="feeResCount-reject">0</span></button>
-    </div>
-    <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;" id="feeResultListLabel"></div>
-    <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;" id="feeResultListBody"></div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalFeeImportResults')">Cancel</button>
-      <button class="btn btn-primary" style="flex:2;" id="feeSubmitBtn" onclick="submitFeeImportAll()">✅ Confirm &amp; Apply</button>
-    </div>
   </div>
 </div>
 
@@ -1756,7 +1764,7 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
     <div class="modal-title">Add Batch<button class="modal-close" onclick="closeModal('modalAddBatch')">×</button></div>
     <div class="form-group"><label class="form-label">Sport</label>
       <select class="form-select" id="newBatchSport"></select>
-      <div style="font-size:10px;color:var(--gray);margin-top:4px;">A batch name can be reused across multiple sports. Add a sport first if the list is empty.</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px;">Each batch belongs to one sport. Add a sport first if the list is empty.</div>
     </div>
     <div class="form-group"><label class="form-label">Batch Name</label><input type="text" class="form-input" id="newBatchName" placeholder="e.g. Morning Batch" maxlength="30"></div>
     <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveNewBatch()">Add Batch</button>
@@ -1781,8 +1789,8 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
   <div class="modal">
     <div class="modal-title">Edit Batch<button class="modal-close" onclick="closeModal('modalEditBatch')">×</button></div>
     <input type="hidden" id="editBatchIdx">
-    <div class="form-group"><label class="form-label">Sport(s) <span style="color:var(--gray);font-size:10px;">(hold to select multiple)</span></label>
-      <select class="form-select" id="editBatchSport" multiple size="4" style="height:auto;"></select>
+    <div class="form-group"><label class="form-label">Sport</label>
+      <select class="form-select" id="editBatchSport"></select>
     </div>
     <div class="form-group"><label class="form-label">Batch Name</label><input type="text" class="form-input" id="editBatchName" maxlength="30"></div>
     <div style="display:flex;gap:8px;">
@@ -2561,12 +2569,32 @@ function saveEnquiry() {
 }
 function clearEnquiryFilters() {
   const cf = document.getElementById('enqFilterConversion');
+  const rf = document.getElementById('enqFilterReminderDate');
   const sf = document.getElementById('enqFilterStaff');
   const spf = document.getElementById('enqFilterSport');
   if (cf) cf.value = '';
+  if (rf) rf.value = '';
   if (sf) sf.value = '';
   if (spf) spf.value = '';
+  updateEnqFilterIndicator();
   renderEnquiryList();
+}
+function toggleEnquiryFilter() {
+  const body    = document.getElementById('enqFilterBody');
+  const chevron = document.getElementById('enqFilterChevron');
+  const btn     = document.getElementById('enqFilterToggleBtn');
+  if (!body) return;
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+  if (btn) btn.style.borderRadius = open ? '10px' : '10px 10px 0 0';
+}
+function updateEnqFilterIndicator() {
+  const cf = document.getElementById('enqFilterConversion')?.value || '';
+  const rf = document.getElementById('enqFilterReminderDate')?.value || '';
+  const sf = document.getElementById('enqFilterStaff')?.value || '';
+  const dot = document.getElementById('enqFilterActiveIndicator');
+  if (dot) dot.style.display = (cf || rf || sf) ? 'inline-block' : 'none';
 }
 
 function conversionBadge(ratio) {
@@ -2591,6 +2619,7 @@ function renderEnquiryList() {
   if (!Array.isArray(DB.enquiries)) DB.enquiries = [];
   const search = (document.getElementById('enquirySearch')?.value || '').toLowerCase();
   const filterConv = document.getElementById('enqFilterConversion')?.value || '';
+  const filterReminder = document.getElementById('enqFilterReminderDate')?.value || '';
   const filterStaff = document.getElementById('enqFilterStaff')?.value || '';
   const filterSport = document.getElementById('enqFilterSport')?.value || '';
   // Populate sport filter dropdown
@@ -2647,6 +2676,7 @@ function renderEnquiryList() {
   if (search) list = list.filter(q => q.name.toLowerCase().includes(search) || (q.phone||'').toLowerCase().includes(search));
   if (filterConv) list = list.filter(q => q.conversionRatio === filterConv);
   if (filterSport) list = list.filter(q => (q.sport||'') === filterSport);
+  if (filterReminder) list = list.filter(q => q.reminderDate === filterReminder);
   // Admin: filter by the user a query is ASSIGNED to
   if (isAdmin() && filterStaff) {
     if (filterStaff === '__UNASSIGNED__') list = list.filter(q => !q.assignedTo);
@@ -3022,9 +3052,7 @@ const SNAP_LIMITS = { basic:7, pro:15, premium:30, trial:30, frozen:7 };
 
 function snapGetLimit() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 7;
-  const fallback = SNAP_LIMITS[plan] || 7;
-  return (typeof _planLimit === 'function') ? _planLimit(plan, 'snapshot_days', fallback) : fallback;
+  return SNAP_LIMITS[plan] || 7;
 }
 
 function snapGetPlanName() {
@@ -3635,7 +3663,7 @@ async function doLogin() {
             const _fsel = document.getElementById('fzFrozenScreen');
             if (_fsel) {
               document.body.style.overflow = 'hidden';
-              _fsel.style.cssText = 'display:flex !important;position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#0f1f3d,#1a1040,#0a1628);align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:Poppins,sans-serif;';
+              _fsel.style.cssText = 'display:flex !important;position:fixed;inset:0;z-index:2147483647;background:linear-gradient(135deg,#0f1f3d,#1a1040,#0a1628);align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:Poppins,sans-serif;';
               // Set titles
               const _kind = _fp === 'frozen' ? 'manual' : (_fp === 'trial' ? 'trial' : 'plan');
               const _titles = {trial:'Your Free Trial Has Ended',plan:'Your Subscription Has Expired',manual:'Your Account Is On Hold'};
@@ -3977,14 +4005,11 @@ function applyRoleUI() {
     el.style.display = isAdmin() ? '' : 'none';
   });
 
-  // Plan-based tab access — driven by _fzHasAccess(), which reads live
-  // boolean columns from the `plans` table (falls back to hardcoded
-  // defaults only until that table has loaded).
-  const plan = (DB.settings && DB.settings.plan) || 'trial';
-  const hasEnquiry     = _fzHasAccess(plan, 'enquiry');
-  const hasActivity    = _fzHasAccess(plan, 'activity');
-  const hasPerformance = _fzHasAccess(plan, 'performance');
-  const hasSchedules   = _fzHasAccess(plan, 'schedules');
+  // Plan-based: Pro+ tabs (enquiry, activity, performance, schedules)
+  // Trial is treated as Premium-tier during the trial period (premium-trial offering)
+  const plan    = (DB.settings && DB.settings.plan) || 'trial';
+  const isPro   = ['pro','premium','trial'].includes(plan);
+  const isPrem  = ['premium','trial'].includes(plan);
 
   // Plans button in hamburger — admin only, hide for Premium (already max plan)
   const plansBtn = document.getElementById('tnav-plans-btn');
@@ -4012,29 +4037,29 @@ function applyRoleUI() {
     panelPlanBadge.style.display    = 'inline';
   }
 
-  // Enquiry tab
+  // Enquiry tab — Pro+
   const enqNav  = document.getElementById('tnav-enquiry');
-  if (enqNav)  enqNav.style.display  = hasEnquiry ? '' : 'none';
+  if (enqNav)  enqNav.style.display  = isPro ? '' : 'none';
   const enqBottomNav = document.getElementById('nav-enquiry');
-  if (enqBottomNav) enqBottomNav.style.display = hasEnquiry ? '' : 'none';
+  if (enqBottomNav) enqBottomNav.style.display = isPro ? '' : 'none';
 
-  // Activity tab
+  // Activity tab — Pro+
   const actNav  = document.getElementById('tnav-activity');
-  if (actNav)  actNav.style.display  = hasActivity ? '' : 'none';
+  if (actNav)  actNav.style.display  = isPro ? '' : 'none';
 
-  // Performance tab
+  // Performance tab — Pro+
   const perfNav = document.getElementById('tnav-performance');
-  if (perfNav) perfNav.style.display = hasPerformance ? '' : 'none';
+  if (perfNav) perfNav.style.display = isPro ? '' : 'none';
 
-  // Schedules tab
+  // Schedules tab — Premium only
   const schedNav = document.getElementById('tnav-schedules');
-  if (schedNav) schedNav.style.display = hasSchedules ? '' : 'none';
+  if (schedNav) schedNav.style.display = isPrem ? '' : 'none';
 
   // If current page is a locked tab, redirect to home
-  if (!hasEnquiry && currentPage === 'enquiry') switchPage('home');
-  if (!hasActivity && currentPage === 'activity') switchPage('home');
-  if (!hasPerformance && currentPage === 'performance') switchPage('home');
-  if (!hasSchedules && currentPage === 'schedules') {
+  if (!isPro && ['enquiry','activity','performance'].includes(currentPage)) {
+    switchPage('home');
+  }
+  if (!isPrem && currentPage === 'schedules') {
     switchPage('home');
   }
 }
@@ -4050,25 +4075,6 @@ let hasLoadedRemote = false;
 const sb = () => window._sb;
 const acadId = () => _currentAcademyId;
 
-// Supabase caps unpaginated selects at 1000 rows by default. Tables that grow
-// large over time (attendance, fees — one row per student per day/month) can
-// silently lose the newest rows once the table passes that cap. This fetches
-// every page so nothing gets dropped as the table grows.
-async function fetchAllPaged(table, aid, orderFn) {
-  const pageSize = 1000;
-  let from = 0;
-  let all = [];
-  while (true) {
-    let q = sb().from(table).select('*').eq('academy_id', aid);
-    if (orderFn) q = orderFn(q);
-    const { data, error } = await q.range(from, from + pageSize - 1);
-    if (error) return { data: null, error };
-    all = all.concat(data || []);
-    if (!data || data.length < pageSize) break;
-    from += pageSize;
-  }
-  return { data: all, error: null };
-}
 async function loadAllData() {
   try {
     const aid = acadId();
@@ -4084,10 +4090,10 @@ async function loadAllData() {
       sb().from('app_users').select('*').eq('academy_id', aid),
       sb().from('batches').select('*').eq('academy_id', aid).order('sort_order'),
       sb().from('students').select('*').eq('academy_id', aid),
-      fetchAllPaged('attendance', aid),
-      fetchAllPaged('fees', aid),
+      sb().from('attendance').select('*').eq('academy_id', aid),
+      sb().from('fees').select('*').eq('academy_id', aid),
       sb().from('enquiries').select('*').eq('academy_id', aid),
-      fetchAllPaged('class_log', aid),
+      sb().from('class_log').select('*').eq('academy_id', aid),
       // Fetch audit_log within plan retention window (3/6/9 months)
       // plan not loaded yet at this point so use a safe 270-day max; filtered again on render
       sb().from('audit_log').select('*').eq('academy_id', aid)
@@ -4098,9 +4104,8 @@ async function loadAllData() {
       sb().from('sports').select('*').eq('academy_id', aid).order('sort_order'),
       sb().from('enrollments').select('*').eq('academy_id', aid),
       sb().from('leave_requests').select('*').eq('academy_id', aid).order('applied_at', { ascending: false }),
-      fetchAllPaged('week_schedules', aid, q => q.order('date', { ascending: true }))
+      sb().from('week_schedules').select('*').eq('academy_id', aid).order('date', { ascending: true })
     ]);
-
 
     // --- settings (from academies row) ---
     const a = acadRes.data || {};
@@ -4930,7 +4935,7 @@ function _toDateOrNull(v) {
 
 
 function isModalOpen() {
-  const inputModals = ['modalStudent','modalFee','modalUser','modalAddBatch','modalNote','modalImport','modalAttImport','modalFeeImport','modalFeeImportResults'];
+  const inputModals = ['modalStudent','modalFee','modalUser','modalAddBatch','modalNote','modalImport','modalAttImport','modalFeeImport'];
   return inputModals.some(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('active');
@@ -5004,22 +5009,24 @@ function switchPage(name, noAnim) {
   if (dnavEl) dnavEl.classList.add('active');
 
   if (name === 'home') loadDashboard();
-  if (name === 'students') { renderStudentList(); }
+  if (name === 'students') { renderBatchChips('student'); renderStudentList(); }
   if (name === 'attendance') { populateAttSportSelect(); renderAttendance(); }
   if (name === 'fees') { populateFeeSportSelect(); renderFees(); }
   if (name === 'enquiry') renderEnquiryList();
   // Plan gate — redirect to home if tab is locked for this plan
-  // Uses the same _fzHasAccess() as applyRoleUI() so the two can't drift apart.
-  const _plan = (DB.settings && DB.settings.plan) || 'trial';
-  const _tabFlag = { enquiry:'enquiry', activity:'activity', performance:'performance', schedules:'schedules', leaveCount:'schedules' };
-  if (_tabFlag[name] && !_fzHasAccess(_plan, _tabFlag[name])) {
-    const isPremTab = name === 'schedules' || name === 'leaveCount';
-    showToast(
-      isPremTab
-        ? 'Staff Schedules are available on Premium plan. Upgrade to unlock.'
-        : 'Enquiry, Activity & Performance are available on Pro plan. Upgrade to unlock.',
-      'error'
-    );
+  const _plan    = (DB.settings && DB.settings.plan) || 'trial';
+  const _isPro   = ['pro','premium','trial'].includes(_plan);
+  const _isPrem  = ['premium','trial'].includes(_plan);
+  const _proTabs = ['enquiry','activity','performance'];
+  const _premTabs = ['schedules','leaveCount'];
+
+  if (_proTabs.includes(name) && !_isPro) {
+    showToast('Enquiry, Activity & Performance are available on Pro plan. Upgrade to unlock.', 'error');
+    setTimeout(() => { if (typeof fzOpenPlans === 'function') fzOpenPlans(); }, 800);
+    return;
+  }
+  if (_premTabs.includes(name) && !_isPrem) {
+    showToast('Staff Schedules are available on Premium plan. Upgrade to unlock.', 'error');
     setTimeout(() => { if (typeof fzOpenPlans === 'function') fzOpenPlans(); }, 800);
     return;
   }
@@ -5093,9 +5100,69 @@ function refreshCurrentPage() {
 })();
 
 // ----------------------------------------------------------------
-// BATCH CHIPS — removed (superseded by dropdown-based batch filters on Students/Attendance/Fees,
-// which independently handle staff-batch restriction and invalid-selection reset)
+// BATCH CHIPS (preserves selection)
 // ----------------------------------------------------------------
+function renderBatchChips(page) {
+  const el = document.getElementById(page + 'BatchChips');
+  if (!el) return;
+
+  const staffBatches = getStaffBatches();
+
+  // Determine which sport scopes this tab (attendance / fees), then limit batches to that sport
+  let sportForPage = '';
+  if (page === 'att') sportForPage = attCurrentSport();
+  else if (page === 'fee') sportForPage = feeCurrentSport();
+  let sportBatches = DB.batches;
+  if (sportForPage) sportBatches = DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sportForPage);
+
+  // Staff are restricted to their assigned batches, intersected with the sport's batches
+  let restrictedBatches = staffBatches.length > 0
+    ? staffBatches.filter(b => sportBatches.includes(b))
+    : sportBatches;
+
+  // Auto-lock selection to first available batch for staff
+  if (staffBatches.length > 0 && selectedBatch[page] === 'ALL') {
+    selectedBatch[page] = restrictedBatches[0] || 'ALL';
+  }
+  // If the current selection isn't in this sport's batches, reset to ALL
+  if (selectedBatch[page] !== 'ALL' && selectedBatch[page] !== '__DROPPED__'
+      && !restrictedBatches.includes(selectedBatch[page])) {
+    selectedBatch[page] = 'ALL';
+  }
+  const cur = selectedBatch[page] || 'ALL';
+
+  const activeStudents = getActiveStudents();
+  const counts = {};
+  DB.batches.forEach(b => counts[b] = activeStudents.filter(s => s.batch === b).length);
+
+  let html = '';
+  if (staffBatches.length === 0) {
+    // Admin or unassigned staff — show All chip
+    html += `<div class="batch-chip ${cur==='ALL'?'active':''}" onclick="selectBatch('${page}','ALL',this)">All (${activeStudents.length})</div>`;
+  }
+  restrictedBatches.forEach(b => {
+    html += `<div class="batch-chip ${cur===b?'active':''}" onclick="selectBatch('${page}','${b}',this)">${escHtml(b)} (${counts[b]||0})</div>`;
+  });
+  if (page === 'student' && staffBatches.length === 0) {
+    const droppedCount = getBannedStudents().length;
+    html += `<div class="batch-chip ${cur==='__DROPPED__'?'active':''}" onclick="selectBatch('${page}','__DROPPED__',this)" style="${cur==='__DROPPED__'?'':'border-color:#ef444455;color:#f87171;'}">🚫 Dropped (${droppedCount})</div>`;
+  }
+  el.innerHTML = html;
+}
+function selectBatch(page, batch, el) {
+  const staffBatches = getStaffBatches();
+  // Block staff from switching to a batch they're not assigned to
+  if (staffBatches.length > 0 && batch !== '__DROPPED__' && !staffBatches.includes(batch) && batch !== 'ALL') {
+    showToast('You are not assigned to this batch', 'warn');
+    return;
+  }
+  selectedBatch[page] = batch;
+  el.closest('.batch-chips').querySelectorAll('.batch-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  if (page === 'student') renderStudentList();
+  if (page === 'att') renderAttendance();
+  if (page === 'fee') renderFees();
+}
 
 // ----------------------------------------------------------------
 // STUDENTS
@@ -5285,7 +5352,7 @@ function onEnrollSportPick() {
   const batchSel = document.getElementById('enrollBatchPick');
   if (!batchSel) return;
   if (!sport) { batchSel.innerHTML = '<option value="">— Select Batch —</option>'; return; }
-  const batchesForSport = DB.batches.filter(b => batchHasSport(b, sport));
+  const batchesForSport = DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sport);
   batchSel.innerHTML = batchesForSport.length
     ? '<option value="">— Select Batch —</option>' + batchesForSport.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('')
     : '<option value="">— No batches in this sport —</option>';
@@ -5364,64 +5431,28 @@ function planLogRetentionLabel() {
   return Math.round(planLogRetentionDays()/30) + ' months';
 }
 
-// Reads a limit for the given plan from the live `plans` table
-// (window._fzPlanLimits, built in fzLoadStatus). Falls back to the
-// hardcoded default if that plan/key isn't in the map yet (e.g. very
-// first paint before the Supabase fetch has completed).
-function _planLimit(plan, key, fallback) {
-  const live = window._fzPlanLimits && window._fzPlanLimits[plan];
-  return (live && key in live && live[key] !== undefined) ? live[key] : fallback;
-}
-
-// Fallback access flags — used only until the live `plans` table has
-// loaded, or if a given plan row is missing a flag column.
-const _FZ_ACCESS_FALLBACK = {
-  basic:   { enquiry:false, activity:false, performance:false, schedules:false, reports:false, bulk_import:false, whatsapp:false },
-  pro:     { enquiry:true,  activity:true,  performance:true,  schedules:false, reports:true,  bulk_import:true,  whatsapp:true  },
-  premium: { enquiry:true,  activity:true,  performance:true,  schedules:true,  reports:true,  bulk_import:true,  whatsapp:true  },
-  trial:   { enquiry:true,  activity:true,  performance:true,  schedules:true,  reports:true,  bulk_import:true,  whatsapp:true  }
-};
-// Single source of truth for "does this plan unlock this tab/feature?"
-// Used by applyRoleUI(), switchPage(), and gatedFeature() so the three
-// can never drift apart from each other again.
-function _fzHasAccess(plan, flag) {
-  if (plan === 'frozen') return false;
-  const live = window._fzPlanAccess && window._fzPlanAccess[plan];
-  if (live && flag in live && live[flag] !== undefined && live[flag] !== null) return !!live[flag];
-  return !!(_FZ_ACCESS_FALLBACK[plan] && _FZ_ACCESS_FALLBACK[plan][flag]);
-}
-
 function planStudentLimit() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 0;
-  const fallback = {basic:50, pro:250, premium:null, trial:null}[plan] ?? 50;
-  return _planLimit(plan, 'student_limit', fallback);
+  const limits = {basic:50, pro:250, premium:null, trial:null, frozen:0};
+  return plan in limits ? limits[plan] : 50;
 }
 function planStaffLimit() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 0;
-  const fallback = {basic:2, pro:4, premium:20, trial:20}[plan] ?? 2;
-  return _planLimit(plan, 'staff_limit', fallback);
+  return {basic:2, pro:4, premium:20, trial:20, frozen:0}[plan] ?? 2;
 }
 function planSportLimit() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 0;
-  const fallback = {basic:2, pro:10, premium:20, trial:20}[plan] ?? 2;
-  return _planLimit(plan, 'sport_limit', fallback);
+  return {basic:2, pro:10, premium:20, trial:20, frozen:0}[plan] ?? 2;
 }
 function planBatchLimit() {
   // Total batch limit = sports × batches per sport
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 0;
-  const fallback = {basic:4, pro:100, premium:400, trial:400}[plan] ?? 4;
-  return _planLimit(plan, 'batch_limit', fallback);
+  return {basic:4, pro:100, premium:400, trial:400, frozen:0}[plan] ?? 4;
 }
 // Batches per sport limit
 function planBatchesPerSport() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
-  if (plan === 'frozen') return 0;
-  const fallback = {basic:2, pro:10, premium:20, trial:20}[plan] ?? 2;
-  return _planLimit(plan, 'batches_per_sport_limit', fallback);
+  return {basic:2, pro:10, premium:20, trial:20, frozen:0}[plan] ?? 2;
 }
 function planDisplayName() {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
@@ -5578,30 +5609,6 @@ function rollPrefix(sport, batch) {
   const b = String(batch||'').trim();
   if (!s || !b) return '';
   return (s[0] + b[0]).toUpperCase();
-}
-// ── Batch ↔ Sport helpers ──────────────────────────────────────────
-// DB.batchSport[name] can be a single sport string (legacy) or an array of
-// sports (current) — this lets the SAME batch name be reused independently
-// across multiple sports (e.g. "Morning" under both Karate and Silambam).
-function _batchSportArr(name) {
-  const v = DB.batchSport && DB.batchSport[name];
-  if (!v) return [];
-  return Array.isArray(v) ? v.filter(Boolean) : [v];
-}
-function batchHasSport(name, sport) {
-  return _batchSportArr(name).includes(sport);
-}
-function addBatchSport(name, sport) {
-  if (!DB.batchSport) DB.batchSport = {};
-  const arr = _batchSportArr(name);
-  if (!arr.includes(sport)) arr.push(sport);
-  DB.batchSport[name] = arr;
-}
-function removeBatchSport(name, sport) {
-  if (!DB.batchSport) return;
-  const arr = _batchSportArr(name).filter(s => s !== sport);
-  if (arr.length) DB.batchSport[name] = arr;
-  else delete DB.batchSport[name];
 }
 // Next available roll code for a given sport+batch. excludeId lets edits ignore
 // the student's own current roll when recomputing (so editing doesn't self-collide).
@@ -5781,29 +5788,13 @@ function parseImportCSV(text) {
     // Case-insensitive batch match: find existing batch by name — Batch is mandatory, no fallback
     const rawBatch = get('batch');
     if (!rawBatch) { importRejected.push({ label: rowLabel, reason: 'Missing Batch.' }); return; }
-    const matchedBatch = DB.batches.find(b => b.toLowerCase() === rawBatch.toLowerCase());
-    if (!matchedBatch) { importRejected.push({ label: rowLabel, reason: `Batch "${rawBatch}" does not exist for this academy.` }); return; }
+    const matchedBatch = DB.batches.find(b => b.toLowerCase() === rawBatch.toLowerCase()) || rawBatch;
     // Sport: explicit column, else infer from the batch's mapped sport — Sport is mandatory, no fallback
     const rawSport = get('sport');
-    const batchSports = _batchSportArr(matchedBatch);
-    let matchedSport = '';
-    if (rawSport) {
-      matchedSport = (DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase()) || '';
-      if (!matchedSport) { importRejected.push({ label: rowLabel, reason: `Sport "${rawSport}" does not exist for this academy.` }); return; }
-      if (!batchSports.some(sp => sp.toLowerCase() === matchedSport.toLowerCase())) {
-        importRejected.push({ label: rowLabel, reason: `Sport "${matchedSport}" is not offered in Batch "${matchedBatch}".` });
-        return;
-      }
-    } else {
-      matchedSport = batchSports.length === 1 ? batchSports[0] : '';
-    }
-    if (!matchedSport) {
-      const reason = batchSports.length > 1
-        ? `Batch "${matchedBatch}" is used by multiple sports (${batchSports.join(', ')}) — add a Sport column to disambiguate.`
-        : 'Missing Sport (and batch has no default sport mapping).';
-      importRejected.push({ label: rowLabel, reason });
-      return;
-    }
+    const matchedSport = rawSport
+      ? ((DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase()) || rawSport)
+      : ((DB.batchSport && DB.batchSport[matchedBatch]) || '');
+    if (!matchedSport) { importRejected.push({ label: rowLabel, reason: 'Missing Sport (and batch has no default sport mapping).' }); return; }
 
     const rollRaw = get('rollNo');
     const dobVal = excelDateToDisplay(get('dob'));
@@ -6030,6 +6021,7 @@ function submitImportAll() {
       addLog('student_import', `Imported students: ${inserts.length} inserted, ${updates.length} updated`);
       closeModal('modalImportResults');
       renderStudentList();
+      renderBatchChips('student');
       showToast(`Imported: ${inserts.length} added, ${updates.length} updated`, 'success');
     }
   );
@@ -6194,22 +6186,10 @@ function _parseAttImportCSVInner(text) {
     const rowLabel = rawName || (rawRoll ? `Roll ${rawRoll}` : `Row ${li+2}`);
 
     // Resolve sport — always normalize to the exact casing used in DB.sports.
-    // Sport must exist for this academy — reject up front rather than silently
-    // falling back to the raw typed text (which caused misleading "batch mismatch"
-    // errors further down for a plain sport typo).
     // Done BEFORE student resolution so we can disambiguate same-name students across sports.
-    let resolvedSportRaw = '';
-    if (rawSport) {
-      resolvedSportRaw = (DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase().trim()) || '';
-      if (!resolvedSportRaw) { attImportRejected.push({ label: rowLabel, reason: `Sport "${rawSport}" does not exist for this academy.` }); return; }
-    }
-
-    // Batch must exist for this academy — reject up front (separate from the later
-    // check that the batch matches the specific student's enrollment).
-    if (rawBatch) {
-      const academyBatch = DB.batches.find(b => b.toLowerCase() === rawBatch.toLowerCase());
-      if (!academyBatch) { attImportRejected.push({ label: rowLabel, reason: `Batch "${rawBatch}" does not exist for this academy.` }); return; }
-    }
+    const resolvedSportRaw = rawSport
+      ? ((DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase().trim()) || rawSport.trim())
+      : '';
 
     // Resolve student
     let student = null;
@@ -6440,7 +6420,7 @@ let feeImportRows = [];
 
 function openFeeImportModal() {
   feeImportRows = [];
-  feeImportRejected = [];
+  document.getElementById('feeImportPreview').style.display = 'none';
   document.getElementById('feeImportError').style.display = 'none';
   document.getElementById('feeImportFileInput').value = '';
   openModal('modalFeeImport');
@@ -6448,19 +6428,17 @@ function openFeeImportModal() {
 
 function downloadFeeImportTemplate() {
   try {
-    const headers = ['Name','RollNo','Sport','Batch','Eligible Month','Status','Amount','Method','PaidDate','Collected By'];
+    const headers = ['Name','RollNo','Sport','Month','Status','Amount','Method','PaidDate'];
     const sp = (DB.sports && DB.sports[0]) || 'Sport A';
-    const bt = (DB.batches && DB.batches[0]) || 'Batch A';
     const s1 = DB.students[0] || {};
     const s2 = DB.students[1] || {};
-    const collector = (currentUser && currentUser.name) || 'Admin';
     const thisMonth = (()=>{ const n=new Date(); return n.getFullYear()+'-'+pad(n.getMonth()+1); })();
-    const ex1 = [s1.name||'Arjun Kumar',  s1.rollNo||'SM01', s1.sport||sp, s1.batch||bt, thisMonth, 'paid',   1500, 'Cash', todayDisplay(), collector];
-    const ex2 = [s2.name||'Divya Sharma', s2.rollNo||'SM02', s2.sport||sp, s2.batch||bt, thisMonth, 'unpaid', '',   '',     '', ''];
+    const ex1 = [s1.name||'Arjun Kumar',  s1.rollNo||'SM01', s1.sport||sp, thisMonth, 'paid',   1500, 'Cash', todayDisplay()];
+    const ex2 = [s2.name||'Divya Sharma', s2.rollNo||'SM02', s2.sport||sp, thisMonth, 'unpaid', '',   '',     ''];
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ex1, ex2]);
-    ws['!cols'] = [{wch:20},{wch:8},{wch:14},{wch:14},{wch:14},{wch:8},{wch:8},{wch:10},{wch:14},{wch:16}];
+    ws['!cols'] = [{wch:20},{wch:8},{wch:14},{wch:10},{wch:8},{wch:8},{wch:10},{wch:14}];
     XLSX.utils.book_append_sheet(wb, ws, 'Fees');
 
     const instr = [
@@ -6469,19 +6447,17 @@ function downloadFeeImportTemplate() {
       ['2. DELETE the two example rows before importing.'],
       ['3. Name or RollNo is required to find the student.'],[''],
       ['COLUMN GUIDE'],
-      ['Name',           'Full name of the student.'],
-      ['RollNo',         'Roll number — used as fallback if Name is blank.'],
-      ['Sport',          'Sport name — must exist for this academy.'],
-      ['Batch',          'Batch name — must exist for this academy and offer the given Sport.'],
-      ['Eligible Month', 'YYYY-MM format — e.g. 2025-06. Student must already be enrolled and active as of this month.'],
-      ['Status',         'paid   or   unpaid'],
-      ['Amount',         'Fee amount as a number — e.g. 1500. Leave blank for unpaid rows (stored as 0, same as the app\'s manual entry).'],
-      ['Method',         'cash / upi / other. Any other text you enter is stored as "other" (matches the app\'s payment method options).'],
-      ['PaidDate',       'DD/MM/YYYY — date payment was received. Optional.'],
-      ['Collected By',   'Name or email of the admin/staff who collected it. Must match an existing user. Leave blank to use the account doing this import.'],
+      ['Name',     'Full name of the student.'],
+      ['RollNo',   'Roll number — used as fallback if Name is blank.'],
+      ['Sport',    'Sport name (must match a sport in the app).'],
+      ['Month',    'YYYY-MM format — e.g. 2025-06'],
+      ['Status',   'paid   or   unpaid'],
+      ['Amount',   'Fee amount as a number — e.g. 1500. Leave blank to keep existing.'],
+      ['Method',   'Cash / UPI / Card / Cheque / Online etc.'],
+      ['PaidDate', 'DD/MM/YYYY — date payment was received. Optional.'],
     ];
     const wsI = XLSX.utils.aoa_to_sheet(instr);
-    wsI['!cols'] = [{wch:14},{wch:60}];
+    wsI['!cols'] = [{wch:12},{wch:60}];
     XLSX.utils.book_append_sheet(wb, wsI, 'Instructions');
 
     XLSX.writeFile(wb, 'Fee_Import_Template.xlsx');
@@ -6495,6 +6471,7 @@ function showFeeImportError(msg) {
   const el = document.getElementById('feeImportError');
   el.textContent = '⚠️ ' + msg;
   el.style.display = '';
+  document.getElementById('feeImportPreview').style.display = 'none';
 }
 
 function handleFeeImportFile(e) {
@@ -6525,16 +6502,12 @@ const FEE_IMPORT_HEADER_MAP = {
   'name':'name','studentname':'name','fullname':'name',
   'rollno':'rollNo','roll':'rollNo','rollnumber':'rollNo','no':'rollNo','sno':'rollNo',
   'sport':'sport','game':'sport',
-  'batch':'batch','batchname':'batch',
-  'month':'month','eligiblemonth':'month','feemonth':'month','period':'month',
+  'month':'month','feemonth':'month','period':'month',
   'status':'status','feestatus':'status','paymentstatus':'status',
   'amount':'amount','feeamount':'amount','fees':'amount',
   'method':'method','paymentmethod':'method','mode':'method','paymentmode':'method',
   'paiddate':'paidDate','datepaid':'paidDate','paymentdate':'paidDate','date':'paidDate',
-  'collectedby':'collectedBy','collected':'collectedBy','takenby':'collectedBy','receivedby':'collectedBy','staff':'collectedBy','staffname':'collectedBy',
 };
-
-let feeImportRejected = [];
 
 function parseFeeImportCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
@@ -6547,124 +6520,43 @@ function parseFeeImportCSV(text) {
     if (key && !(key in colMap)) colMap[key] = i;
   });
 
-  if (colMap['month'] === undefined) { showFeeImportError('Could not find an "Eligible Month" column (format: YYYY-MM).'); return; }
+  if (colMap['month'] === undefined) { showFeeImportError('Could not find a "Month" column (format: YYYY-MM).'); return; }
   if (colMap['status'] === undefined) { showFeeImportError('Could not find a "Status" column (paid/unpaid).'); return; }
   if (colMap['name'] === undefined && colMap['rollNo'] === undefined) {
     showFeeImportError('Could not find a "Name" or "RollNo" column.'); return;
   }
 
-  feeImportRejected = [];
-  feeImportRows = [];
-  const _staffSports = getStaffSports();   // [] for admin, or the staff member's assigned sports
-  const _staffBatches = getStaffBatches(); // [] for admin, or the staff member's assigned batches
-
-  lines.slice(1).forEach((line) => {
+  const errors = [];
+  feeImportRows = lines.slice(1).map((line, li) => {
     const cols = parseCSVLine(line);
     const get = key => colMap[key] !== undefined ? (cols[colMap[key]] || '').trim() : '';
     const rawName   = get('name');
     const rawRoll   = get('rollNo');
-    const rawSport  = get('sport');
-    const rawBatch  = get('batch');
     const rawMonth  = get('month').trim();   // YYYY-MM
     const rawStatus = get('status').toLowerCase();
     const rawAmount = get('amount');
     const rawMethod = get('method');
     const rawPaid   = excelDateToDisplay(get('paidDate'));
-    const rawCollectedBy = get('collectedBy');
-    const rowLabel  = rawName || (rawRoll ? `Roll ${rawRoll}` : '(blank)');
+    const rawSport  = get('sport');
 
-    if (!rawName && !rawRoll) return; // fully blank row — nothing to report
-
-    // Resolve sport text against the academy's sport list up front (soft — empty if unmatched)
-    // so it can be used to disambiguate same-name students below. The hard "does this sport
-    // actually exist" rejection still happens later, in its usual place.
-    const resolvedSportRaw = rawSport
-      ? ((DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase()) || '')
-      : '';
-
-    // Resolve student — RollNo first (unambiguous), else by Name.
-    // Same-name students are disambiguated via Sport enrollment, mirroring Attendance import.
-    let student = null;
-    if (rawRoll) {
-      student = DB.students.find(s => String(s.rollNo||'').toUpperCase() === rawRoll.toUpperCase());
-    }
-    if (!student && rawName) {
-      const nameMatches = DB.students.filter(s => s.name.toLowerCase() === rawName.toLowerCase());
-      if (nameMatches.length > 1 && resolvedSportRaw) {
-        student = nameMatches.find(s => {
-          const sid2 = s._sid || s.id;
-          return (DB.enrollments||[]).some(e => e.studentId === sid2 && e.sport && e.sport.toLowerCase() === resolvedSportRaw.toLowerCase());
-        }) || null;
-        if (!student) { feeImportRejected.push({ label: rowLabel, reason: `Matches ${nameMatches.length} students but none enrolled in "${resolvedSportRaw}" — add RollNo to be precise.` }); return; }
-      } else if (nameMatches.length > 1) {
-        feeImportRejected.push({ label: rowLabel, reason: `Matches ${nameMatches.length} students — add a Sport or RollNo column to disambiguate.` }); return;
-      } else {
-        student = nameMatches[0] || null;
-      }
-    }
-    if (!student) { feeImportRejected.push({ label: rowLabel, reason: `Student "${rawName||rawRoll}" not found.` }); return; }
-
-    // Validate month YYYY-MM (checked early — eligibility below needs the parsed year/month)
+    // Validate month YYYY-MM
     if (!/^\d{4}-\d{2}$/.test(rawMonth)) {
-      feeImportRejected.push({ label: student.name, reason: `Invalid Eligible Month "${rawMonth}" — use YYYY-MM format.` }); return;
-    }
-    const [fy, fm] = rawMonth.split('-').map(Number);
-
-    // Student must already be enrolled (joined on/before this month) and still active
-    // (not dropped/banned before this month) — same rule the manual Add Fee list uses.
-    if (!isEnrolledOnDate(student, fy, fm, 0)) {
-      feeImportRejected.push({ label: student.name, reason: `Not enrolled as of ${rawMonth}${student.joinDate ? ` (joined ${student.joinDate})` : ''}.` }); return;
-    }
-    if (!isActiveOnDate(student, fy, fm, 0)) {
-      feeImportRejected.push({ label: student.name, reason: `Student was inactive/dropped by ${rawMonth}.` }); return;
+      errors.push(`Row ${li+2}: Invalid month "${rawMonth}" — use YYYY-MM format. Skipped.`); return null;
     }
 
-    // Sport must exist for this academy
-    let sport = '';
-    if (rawSport) {
-      sport = resolvedSportRaw;
-      if (!sport) { feeImportRejected.push({ label: student.name, reason: `Sport "${rawSport}" does not exist for this academy.` }); return; }
-    } else {
-      sport = studentSingleSport(student._sid || student.id) || (DB.sports && DB.sports[0]) || '';
-    }
-
-    // Batch must exist for this academy, and offer the resolved sport
-    let batch = '';
-    if (rawBatch) {
-      batch = DB.batches.find(b => b.toLowerCase() === rawBatch.toLowerCase()) || '';
-      if (!batch) { feeImportRejected.push({ label: student.name, reason: `Batch "${rawBatch}" does not exist for this academy.` }); return; }
-      if (sport && !_batchSportArr(batch).some(sp => sp.toLowerCase() === sport.toLowerCase())) {
-        feeImportRejected.push({ label: student.name, reason: `Sport "${sport}" is not offered in Batch "${batch}".` }); return;
-      }
-    } else {
-      batch = student.batch || '';
-    }
-
-    // Staff are restricted to their assigned sports/batches, same as everywhere else in the app.
-    // Admins (empty restriction arrays) are unrestricted.
-    if (_staffSports.length && !_staffSports.some(sp => sp.toLowerCase() === sport.toLowerCase())) {
-      feeImportRejected.push({ label: student.name, reason: `You are not assigned to Sport "${sport}".` }); return;
-    }
-    if (_staffBatches.length && !_staffBatches.some(b => b.toLowerCase() === batch.toLowerCase())) {
-      feeImportRejected.push({ label: student.name, reason: `You are not assigned to Batch "${batch}".` }); return;
-    }
+    // Resolve student
+    let student = null;
+    if (rawRoll) student = DB.students.find(s => String(s.rollNo||'').toUpperCase() === rawRoll.toUpperCase());
+    if (!student && rawName) student = DB.students.find(s => s.name.toLowerCase() === rawName.toLowerCase());
+    if (!student) { errors.push(`Row ${li+2}: Student "${rawName||rawRoll}" not found — skipped.`); return null; }
 
     const status = (rawStatus === 'paid') ? 'paid' : (rawStatus === 'unpaid') ? 'unpaid' : null;
-    if (!status) { feeImportRejected.push({ label: student.name, reason: `Status "${get('status')}" must be "paid" or "unpaid".` }); return; }
-
-    // Collected By must resolve to an existing admin/staff account (name or email, case-insensitive).
-    // Blank → defaults to whoever is running this import, same as manual entry.
-    let collectedBy = currentUser ? (currentUser.name || currentUser.id) : '';
-    if (rawCollectedBy) {
-      const matchedUser = (DB.users||[]).find(u =>
-        (u.name && u.name.toLowerCase() === rawCollectedBy.toLowerCase()) ||
-        (u.email && u.email.toLowerCase() === rawCollectedBy.toLowerCase())
-      );
-      if (!matchedUser) { feeImportRejected.push({ label: student.name, reason: `Collected By "${rawCollectedBy}" does not match any admin/staff user.` }); return; }
-      collectedBy = matchedUser.name || matchedUser.email || matchedUser.id;
-    }
+    if (!status) { errors.push(`Row ${li+2}: Status "${get('status')}" must be "paid" or "unpaid" — skipped.`); return null; }
 
     const sid = student._sid || student.id;
+    let sport = rawSport
+      ? ((DB.sports||[]).find(sp => sp.toLowerCase() === rawSport.toLowerCase()) || rawSport)
+      : (studentSingleSport(sid) || (DB.sports&&DB.sports[0]) || '');
 
     // Parse paidDate DD/MM/YYYY → ISO
     let paidDateIso = '';
@@ -6675,142 +6567,47 @@ function parseFeeImportCSV(text) {
 
     const feeObj = {
       status,
-      amount: rawAmount ? (parseFloat(rawAmount) || 0) : 0,
-      method: rawMethod ? (['cash','upi','other'].includes(rawMethod.toLowerCase()) ? rawMethod.toLowerCase() : 'other') : '',
+      amount: rawAmount ? (parseFloat(rawAmount) || null) : null,
+      method: rawMethod || '',
       date: paidDateIso || (status === 'paid' ? new Date().toISOString() : ''),
-      by: collectedBy,
+      by: currentUser ? (currentUser.name || currentUser.id) : '',
       msgSent: []
     };
 
-    feeImportRows.push({ student, sid, monthKey: rawMonth, displayMonth: rawMonth, sport, batch, feeObj });
-  });
+    return { student, sid, monthKey: rawMonth, sport, feeObj, displayMonth: rawMonth };
+  }).filter(Boolean);
 
-  // Classify each valid row as Insert (no existing record), Update (existing record differs),
-  // or Skip (existing record identical) — read-only check, nothing written to DB yet.
-  // Non-admins are blocked from updating a fee that's already been collected/logged by
-  // someone (existing.by set), matching the same restriction the manual Add Fee modal enforces.
-  const FIELDS_TO_COMPARE = ['status','amount','method','date','by'];
-  const _classifiedRows = [];
-  feeImportRows.forEach(r => {
-    const existing = feeGet(r.monthKey, r.sid, r.sport);
-    if (existing === undefined) { r._action = 'insert'; r._diffs = []; _classifiedRows.push(r); return; }
-    const diffs = [];
-    FIELDS_TO_COMPARE.forEach(f => {
-      const newVal = r.feeObj[f] ?? '';
-      const oldVal = existing[f] ?? '';
-      if (String(newVal) !== String(oldVal)) diffs.push({ field: f, from: oldVal, to: newVal });
-    });
-    if (diffs.length && existing.by && !isAdmin()) {
-      feeImportRejected.push({ label: r.student.name, reason: `Already collected by ${existing.by} for ${r.displayMonth} — only admin can update.` });
-      return;
-    }
-    r._diffs = diffs;
-    r._action = diffs.length ? 'update' : 'skip';
-    _classifiedRows.push(r);
-  });
-  feeImportRows = _classifiedRows;
+  if (errors.length) console.warn('Fee import warnings:', errors);
+  if (!feeImportRows.length) { showFeeImportError('No valid rows found. ' + (errors[0]||'')); return; }
 
-  if (feeImportRejected.length) console.warn('Fee import rejected rows:', feeImportRejected);
-  if (!feeImportRows.length && !feeImportRejected.length) { showFeeImportError('No data rows found in file.'); return; }
-  if (!feeImportRows.length) {
-    showFeeImportError('No valid rows found. ' + (feeImportRejected[0] ? feeImportRejected[0].label + ': ' + feeImportRejected[0].reason : ''));
-    return;
-  }
-
-  openFeeImportReview();
-}
-
-const FEE_IMPORT_RES_TAB_META = {
-  insert: { title: 'New Fee Records — will be Inserted',      empty: 'No new fee records to insert.' },
-  update: { title: 'Existing Fee Records — will be Updated',  empty: 'No existing fee records will be updated.' },
-  skip:   { title: 'Skipped — No Changes',                    empty: 'Nothing was skipped.' },
-  reject: { title: 'Rejected Rows',                            empty: 'Nothing was rejected.' },
-};
-const FEE_IMPORT_FIELD_LABELS = { status:'Status', amount:'Amount', method:'Method', date:'Paid Date', by:'Collected By' };
-let _feeImportResultActiveTab = 'insert';
-
-function openFeeImportReview() {
-  const inserts = feeImportRows.filter(r => r._action === 'insert');
-  const updates = feeImportRows.filter(r => r._action === 'update');
-  const skips   = feeImportRows.filter(r => r._action === 'skip');
-
-  document.getElementById('feeResCount-insert').textContent = inserts.length;
-  document.getElementById('feeResCount-update').textContent = updates.length;
-  document.getElementById('feeResCount-skip').textContent   = skips.length;
-  document.getElementById('feeResCount-reject').textContent = feeImportRejected.length;
-
-  const submitBtn = document.getElementById('feeSubmitBtn');
-  const total = inserts.length + updates.length;
-  submitBtn.textContent = total ? `✅ Confirm & Apply (${total})` : '✅ Confirm & Apply';
-  submitBtn.disabled = !total;
-  submitBtn.style.opacity = total ? '1' : '.5';
-
-  document.getElementById('feeImportError').style.display = 'none';
-  document.getElementById('feeImportFileInput').value = '';
-  closeModal('modalFeeImport');
-  openModal('modalFeeImportResults');
-  showFeeImportResultList(feeImportRejected.length ? 'reject' : (inserts.length ? 'insert' : (updates.length ? 'update' : 'skip')));
-}
-
-function showFeeImportResultList(tab) {
-  _feeImportResultActiveTab = tab;
-  Object.keys(FEE_IMPORT_RES_TAB_META).forEach(t => {
-    const btn = document.getElementById('feeResTabBtn-' + t);
-    if (btn) btn.classList.toggle('active', t === tab);
-  });
-
-  const meta = FEE_IMPORT_RES_TAB_META[tab];
-  const list = tab === 'reject' ? feeImportRejected : feeImportRows.filter(r => r._action === tab);
-  document.getElementById('feeResultListLabel').textContent = `${meta.title} (${list.length})`;
-
-  const body = document.getElementById('feeResultListBody');
-  if (!list.length) {
-    body.innerHTML = `<div style="padding:16px;text-align:center;color:var(--gray);font-size:12px;">${meta.empty}</div>`;
-    return;
-  }
-
-  if (tab === 'reject') {
-    body.innerHTML = list.map((r, i) => `
-      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;">
-        <span style="width:22px;height:22px;border-radius:50%;background:#f8717130;color:#f87171;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
-        <div style="flex:1;">
-          <div style="font-weight:700;">${escHtml(r.label)}</div>
-          <div style="color:#f87171;">${escHtml(r.reason)}</div>
-        </div>
-      </div>`).join('');
-    return;
-  }
-
-  body.innerHTML = list.map((r, i) => `
-    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;">
-      <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--gold);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</span>
+  document.getElementById('feeImportPreviewLabel').textContent =
+    feeImportRows.length + ' record' + (feeImportRows.length !== 1 ? 's' : '') + ' ready to import' +
+    (errors.length ? ` (${errors.length} skipped)` : '') + ':';
+  document.getElementById('feeImportPreviewList').innerHTML = feeImportRows.map((r, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--gold);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;">
         <div style="font-weight:700;">${escHtml(r.student.name)}</div>
-        <div style="color:var(--gray);margin-bottom:4px;">${[r.displayMonth, r.sport, r.batch, r.feeObj.status].filter(Boolean).map(escHtml).join(' · ')}${r.feeObj.amount?' · ₹'+r.feeObj.amount:''}${r.feeObj.by?' · 👤 '+escHtml(r.feeObj.by):''}</div>
-        ${tab === 'update' ? `<div style="display:flex;flex-wrap:wrap;gap:5px;">${r._diffs.map(d => `<span style="padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent);color:var(--gold);">${FEE_IMPORT_FIELD_LABELS[d.field]||d.field}: ${escHtml(String(d.from||'—'))} → ${escHtml(String(d.to))}</span>`).join('')}</div>` : ''}
+        <div style="color:var(--gray);">${escHtml(r.displayMonth)} · ${escHtml(r.sport)} · <span style="color:${r.feeObj.status==='paid'?'var(--green)':'var(--red)'};">${r.feeObj.status}</span>${r.feeObj.amount?' · ₹'+r.feeObj.amount:''}</div>
       </div>
-    </div>`).join('');
+    </div>`
+  ).join('');
+  document.getElementById('feeImportPreview').style.display = '';
+  document.getElementById('feeImportError').style.display = 'none';
 }
 
-// ── Submit: user has reviewed the categorized lists, now actually apply ──
-function submitFeeImportAll() {
-  const inserts = feeImportRows.filter(r => r._action === 'insert');
-  const updates = feeImportRows.filter(r => r._action === 'update');
-  const total = inserts.length + updates.length;
-  if (!total) return;
-
-  confirm_('⬆️', 'Apply Fee Import',
-    `This will add ${inserts.length} new fee record(s) and update ${updates.length} existing record(s). Continue?`,
-    () => {
-      [...inserts, ...updates].forEach(r => {
-        feeSet(r.monthKey, r.sid, r.feeObj, r.sport);
-        sbSetFee(r.sid, r.monthKey, r.feeObj, r.sport);
-      });
-      addLog('fee_import', `Bulk imported fees: ${inserts.length} inserted, ${updates.length} updated, ${feeImportRejected.length} rejected`);
-      closeModal('modalFeeImportResults');
-      renderFees();
-      showToast(`${total} fee record(s) applied ✓`, 'success');
+function confirmFeeImport() {
+  if (!feeImportRows.length) return;
+  confirm_('⬆️', 'Import Fees', `Import ${feeImportRows.length} fee record(s)?`, () => {
+    feeImportRows.forEach(r => {
+      feeSet(r.monthKey, r.sid, r.feeObj, r.sport);
+      sbSetFee(r.sid, r.monthKey, r.feeObj, r.sport);
     });
+    addLog('fee_import', `Bulk imported ${feeImportRows.length} fee record(s)`);
+    closeModal('modalFeeImport');
+    renderFees();
+    showToast(feeImportRows.length + ' fee record(s) imported ✓', 'success');
+  });
 }
 
 function downloadStudents(fmt) {
@@ -6967,9 +6764,28 @@ function updateStudentFilterIndicator() {
   const dot = document.getElementById('studentFilterActiveIndicator');
   if (dot) dot.style.display = (n || b || s) ? 'inline-block' : 'none';
 }
+function toggleAttFilter() {
+  const body    = document.getElementById('attFilterBody');
+  const chevron = document.getElementById('attFilterChevron');
+  const btn     = document.getElementById('attFilterToggleBtn');
+  if (!body) return;
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+  if (btn) btn.style.borderRadius = open ? '10px' : '10px 10px 0 0';
+}
+function updateAttFilterIndicator() {
+  const n = (document.getElementById('attSearch')?.value || '').trim();
+  const s = document.getElementById('attStatusFilter')?.value || 'all';
+  const dot = document.getElementById('attFilterActiveIndicator');
+  if (dot) dot.style.display = (n || s !== 'all') ? 'inline-block' : 'none';
+}
 function clearAttFilters() {
   const si = document.getElementById('attSearch');
+  const sf = document.getElementById('attStatusFilter');
   if (si) si.value = '';
+  if (sf) sf.value = 'all';
+  updateAttFilterIndicator();
   renderAttendance();
 }
 
@@ -7131,7 +6947,7 @@ function populateStudentBatchFilter() {
   const selSport = document.getElementById('studentSportFilter')?.value || '';
   // If a sport is chosen, only show batches mapped to that sport
   let batches = DB.batches;
-  if (selSport) batches = DB.batches.filter(b => batchHasSport(b, selSport));
+  if (selSport) batches = DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === selSport);
   if (!isAdmin()) {
     const sb = getStaffBatches();
     if (sb.length) batches = batches.filter(b => sb.includes(b));
@@ -7407,6 +7223,7 @@ function saveBulkEdit() {
     changed.forEach(st => { if (st._sid) sbUpdateStudent(st._sid, st); });
     selectedStudentIds.clear();
     renderStudentList();
+    renderBatchChips('student');
     showToast(`${count} student(s) updated ✓`, 'success');
   });
 }
@@ -7439,6 +7256,7 @@ function bulkDeleteStudents() {
       });
       selectedStudentIds.clear();
       renderStudentList();
+      renderBatchChips('student');
       loadDashboard();
       showToast(`${ids.length} student(s) deleted ✓`, 'success');
     });
@@ -7800,7 +7618,7 @@ function populateAttBatchFilter() {
   const staffBatches = getStaffBatches();
   let batches = sp === 'ALL'
     ? DB.batches.slice()
-    : DB.batches.filter(b => batchHasSport(b, sp));
+    : DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sp);
   if (staffBatches.length) batches = batches.filter(b => staffBatches.includes(b));
   const cur = selectedBatch.att;
   const stillValid = batches.includes(cur);
@@ -7832,6 +7650,7 @@ function renderAttendance() {
 
   // Get students: active + recently-dropped (for past dates), filtered by sport, batch & search
   const attSearch = (document.getElementById('attSearch')?.value || '').toLowerCase();
+  const attStatusFilter = document.getElementById('attStatusFilter')?.value || 'all';
   // Students enrolled in the current sport (or ALL sports in ALL mode)
   const _sportSids = sp === 'ALL'
     ? new Set((DB.enrollments||[]).map(e => e.studentId))
@@ -7863,19 +7682,8 @@ function renderAttendance() {
 
     // Enrolled (joined on/before) AND active (not yet dropped) on this date
     const _attSort = (document.getElementById('attSortBy')?.value) || 'roll_asc';
-    const _baseSorter = makeSorter(_attSort);
-    const _statusRank = { present_first: { P: 0 }, absent_first: { A: 0 } };
     const enrolled = students.filter(s => isEnrolledOnDate(s, y, m, d) && isActiveOnDate(s, y, m, d))
-      .sort((a, b) => {
-        if (_attSort === 'present_first' || _attSort === 'absent_first') {
-          const rankMap = _statusRank[_attSort];
-          const ra = rankMap[dayData[a.id]] ?? 1;
-          const rb = rankMap[dayData[b.id]] ?? 1;
-          if (ra !== rb) return ra - rb;
-          return makeSorter('roll_asc')(a, b);
-        }
-        return _baseSorter(a, b);
-      });
+      .sort(makeSorter(_attSort));
 
     // Summary counts
     let pCount=0, aCount=0, lCount=0;
@@ -7929,6 +7737,9 @@ function renderAttendance() {
     } else {
       enrolled.forEach(s => {
         const v = dayData[s.id];
+        // Apply status filter (only relevant in day view)
+        if (attStatusFilter === 'present' && v !== 'P') return;
+        if (attStatusFilter === 'absent'  && v !== 'A') return;
         // In ALL mode, resolve this student's sport for late/lock checks
         const rowSp = sp === 'ALL' ? (studentSingleSport(s._sid || s.id) || (DB.sports&&DB.sports[0])) : sp;
         const rowDone = isAttDone(dateKey, rowSp);
@@ -8069,24 +7880,16 @@ function updateWheel(enrolled, p, a, l, classDay) {
   const pD = total && classDay ? (p/total*circ) : 0;
   const aD = total && classDay ? (a/total*circ) : 0;
   const lD = total && classDay ? (l/total*circ) : 0;
-  const wP = document.getElementById('wP');
-  const wA = document.getElementById('wA');
-  const wL = document.getElementById('wL');
-  const wTotal = document.getElementById('wTotal');
-  const wPNum = document.getElementById('wPNum');
-  const wANum = document.getElementById('wANum');
-  const wLNum = document.getElementById('wLNum');
-  if (!wP || !wA || !wL) { console.warn('updateWheel: wheel elements (wP/wA/wL) not found in DOM — skipping wheel render'); return; }
-  wP.setAttribute('stroke-dasharray', `${pD} ${circ-pD}`);
-  wP.setAttribute('stroke-dashoffset', '0');
-  wA.setAttribute('stroke-dasharray', `${aD} ${circ-aD}`);
-  wA.setAttribute('stroke-dashoffset', `${-pD}`);
-  wL.setAttribute('stroke-dasharray', `${lD} ${circ-lD}`);
-  wL.setAttribute('stroke-dashoffset', `${-(pD+aD)}`);
-  if (wTotal) wTotal.textContent = total;
-  if (wPNum) wPNum.textContent = p;
-  if (wANum) wANum.textContent = a;
-  if (wLNum) wLNum.textContent = l;
+  document.getElementById('wP').setAttribute('stroke-dasharray', `${pD} ${circ-pD}`);
+  document.getElementById('wP').setAttribute('stroke-dashoffset', '0');
+  document.getElementById('wA').setAttribute('stroke-dasharray', `${aD} ${circ-aD}`);
+  document.getElementById('wA').setAttribute('stroke-dashoffset', `${-pD}`);
+  document.getElementById('wL').setAttribute('stroke-dasharray', `${lD} ${circ-lD}`);
+  document.getElementById('wL').setAttribute('stroke-dashoffset', `${-(pD+aD)}`);
+  document.getElementById('wTotal').textContent = total;
+  document.getElementById('wPNum').textContent = p;
+  document.getElementById('wANum').textContent = a;
+  document.getElementById('wLNum').textContent = l;
 }
 function toggleOverview(e) {
   e.stopPropagation();
@@ -8337,7 +8140,7 @@ function populateFeeBatchFilter() {
   const staffBatches = getStaffBatches();
   let batches = sp === 'ALL'
     ? DB.batches.slice()
-    : DB.batches.filter(b => batchHasSport(b, sp));
+    : DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sp);
   if (staffBatches.length) batches = batches.filter(b => staffBatches.includes(b));
   const cur = selectedBatch.fee;
   if (!batches.includes(cur) && cur !== 'ALL') selectedBatch.fee = 'ALL';
@@ -8804,7 +8607,7 @@ function populateDashFilters() {
   if (bSel) {
     const cur = bSel.value || 'ALL';
     const selSport = spSel ? spSel.value : 'ALL';
-    let batches = selSport === 'ALL' ? DB.batches.slice() : DB.batches.filter(b => batchHasSport(b, selSport));
+    let batches = selSport === 'ALL' ? DB.batches.slice() : DB.batches.filter(b => (DB.batchSport&&DB.batchSport[b]) === selSport);
     if (staffBatches.length) batches = batches.filter(b => staffBatches.includes(b));
     const stillValid = batches.includes(cur);
     bSel.innerHTML = '<option value="ALL">All Batches</option>' +
@@ -9137,12 +8940,7 @@ function _buildChartData(months, mode) {
     if (mode === 'present') {
       const prefix = `${y}-${pad(m)}-`;
       const classDays = Object.keys(DB.attendance).filter(k => k.startsWith(prefix) && isClassDay(k));
-      // if (!classDays.length) return { onTime: 0, notOnTime: 0, label: MONTHS[m-1].substring(0,3) + '\'' + String(y).slice(2) };
-      if (!classDays.length){
-        const mm=Number(m),yy=Number(y);
-        const lbl=(MONTHS[mm-1] ? MONTHS[mm-1].substring(0,3):'?')+'\''+String(yy).slice(2);
-        return {onTime:0,notOnTime: 0,label:lbl};
-      }
+      if (!classDays.length) return { onTime: 0, notOnTime: 0, label: MONTHS[m-1].substring(0,3) + '\'' + String(y).slice(2) };
       const enrolled = actives.filter(s => isEnrolledOnDate(s, y, m, 0));
       const attended = enrolled.filter(s => studentAttendedMonth(s.id, y, m));
       return { onTime: attended.length, notOnTime: enrolled.length - attended.length, label: MONTHS[m-1].substring(0,3) + '\'' + String(y).slice(2) };
@@ -9918,7 +9716,7 @@ function _fillChartBatch(sportSelId, batchSelId) {
   const sp = document.getElementById(sportSelId)?.value || 'ALL';
   const sel = document.getElementById(batchSelId);
   if (!sel) return;
-  let batches = sp === 'ALL' ? DB.batches.slice() : DB.batches.filter(b => batchHasSport(b, sp));
+  let batches = sp === 'ALL' ? DB.batches.slice() : DB.batches.filter(b => (DB.batchSport&&DB.batchSport[b]) === sp);
   if (!isAdmin()) {
     const sb = getStaffBatches();
     if (sb.length) batches = batches.filter(b => sb.includes(b));
@@ -10454,7 +10252,7 @@ function renderSportBatch() {
   }
   if (batchBadge && typeof planBatchesPerSport === 'function') {
     const perSport = planBatchesPerSport();
-    const cur = (DB.batches||[]).reduce((sum, b) => sum + _batchSportArr(b).length, 0);
+    const cur = (DB.batches||[]).length;
     const sportCount = (DB.sports||[]).length;
     const totalLim = perSport * sportCount;
     const full = cur >= totalLim, near = totalLim > 0 && cur/totalLim >= 0.8;
@@ -10478,7 +10276,7 @@ function renderSportsTabOnly(wrap) {
   }
   let html = '';
   DB.sports.forEach((sp, si) => {
-    const batches = DB.batches.filter(b => batchHasSport(b, sp));
+    const batches = DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sp);
     html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--card2);padding:10px 12px;">
       <span style="font-size:15px;">🏆</span>
       <span style="flex:1;font-size:14px;font-weight:700;color:var(--offwhite);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(sp)}</span>
@@ -10491,35 +10289,31 @@ function renderSportsTabOnly(wrap) {
   wrap.innerHTML = html;
 }
 
-// ── BATCHES TAB: one row per batch-per-sport instance ──
+// ── BATCHES TAB: flat list of every batch, each tagged with its sport ──
 function renderBatchesTabOnly(wrap) {
   if (!DB.batches.length) {
     wrap.innerHTML = `<div style="color:var(--gray);font-size:12px;padding:6px 2px;">No batches yet. Tap <b>+ Batch</b> to create one.</div>`;
     return;
   }
   let html = '';
-  let anyRow = false;
   DB.batches.forEach(b => {
     const bi = DB.batches.indexOf(b);
-    const sportsArr = _batchSportArr(b).filter(s => DB.sports.includes(s));
+    const sport = (DB.batchSport && DB.batchSport[b]) || '';
+    const validSport = sport && DB.sports.includes(sport);
     const cnt = getActiveStudents().filter(s => s.batch === b).length;
-    const rowsForBatch = sportsArr.length ? sportsArr : [null]; // null = unassigned, still show one row
-    rowsForBatch.forEach(sp => {
-      anyRow = true;
-      html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:9px 12px;">
-        <span style="color:var(--gray);font-size:13px;">📦</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--offwhite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(b)}</div>
-          <div style="font-size:10px;color:${sp?'var(--accent2)':'#e8392f'};margin-top:2px;">🏆 ${sp?escHtml(sp):'Unassigned'}</div>
-        </div>
-        <span style="font-size:10px;color:var(--gray);white-space:nowrap;">${cnt} student${cnt===1?'':'s'}</span>
-        <button onclick="openEditBatchModal(${bi})" title="Edit batch" style="background:none;border:none;cursor:pointer;padding:3px;display:flex;align-items:center;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-        </button>
-      </div>`;
-    });
+    html += `<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:9px 12px;">
+      <span style="color:var(--gray);font-size:13px;">📦</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:var(--offwhite);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(b)}</div>
+        <div style="font-size:10px;color:${validSport?'var(--accent2)':'#e8392f'};margin-top:2px;">🏆 ${validSport?escHtml(sport):'Unassigned'}</div>
+      </div>
+      <span style="font-size:10px;color:var(--gray);white-space:nowrap;">${cnt} student${cnt===1?'':'s'}</span>
+      <button onclick="openEditBatchModal(${bi})" title="Edit batch" style="background:none;border:none;cursor:pointer;padding:3px;display:flex;align-items:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+      </button>
+    </div>`;
   });
-  wrap.innerHTML = anyRow ? html : `<div style="color:var(--gray);font-size:12px;padding:6px 2px;">No batches yet. Tap <b>+ Batch</b> to create one.</div>`;
+  wrap.innerHTML = html;
 }
 // Open the Add Batch modal pre-set to a given sport
 function addBatchToSport(sport) {
@@ -10542,7 +10336,7 @@ function saveEditSport() {
   if (DB.sports.some((s,j) => j!==i && s.toLowerCase() === newName.toLowerCase())) { showToast('Sport already exists','error'); return; }
   confirm_('✏️','Rename Sport',`Rename "${old}" → "${newName}"?`, () => {
     DB.sports[i] = newName;
-    Object.keys(DB.batchSport || {}).forEach(b => { const arr=_batchSportArr(b); const ix=arr.indexOf(old); if (ix!==-1) { arr[ix]=newName; DB.batchSport[b]=arr; } });
+    Object.keys(DB.batchSport || {}).forEach(b => { if (DB.batchSport[b] === old) DB.batchSport[b] = newName; });
     (DB.enrollments || []).forEach(e => { if (e.sport === old) e.sport = newName; });
     sbRenameSport(old, newName);
     sbSaveSettings();
@@ -10563,28 +10357,23 @@ function openEditBatchModal(idx) {
   document.getElementById('editBatchIdx').value = idx;
   document.getElementById('editBatchName').value = DB.batches[idx] || '';
   const b = DB.batches[idx];
-  const cur = _batchSportArr(b); // array of sports this batch name is currently assigned to
+  const cur = (DB.batchSport && DB.batchSport[b]) || '';
   const sportSel = document.getElementById('editBatchSport');
   if (sportSel) {
     const sports = Array.isArray(DB.sports) ? DB.sports : [];
-    sportSel.innerHTML = sports.map(s => `<option value="${escHtml(s)}"${cur.includes(s)?' selected':''}>${escHtml(s)}</option>`).join('');
+    sportSel.innerHTML = '<option value="">— none —</option>' +
+      sports.map(s => `<option value="${escHtml(s)}"${s===cur?' selected':''}>${escHtml(s)}</option>`).join('');
   }
   openModal('modalEditBatch');
 }
 function saveEditBatch() {
   const i = parseInt(document.getElementById('editBatchIdx').value);
   const newName = (document.getElementById('editBatchName').value || '').trim();
-  const sportSel = document.getElementById('editBatchSport');
-  const newSports = sportSel ? Array.from(sportSel.selectedOptions).map(o => o.value) : [];
+  const newSport = document.getElementById('editBatchSport')?.value || '';
   if (!newName) { showToast('Enter a batch name','error'); return; }
   const old = DB.batches[i];
   if (DB.batches.some((b,j) => j!==i && b.toLowerCase() === newName.toLowerCase())) { showToast('Batch already exists','error'); return; }
-
-  const renameWarning = (newName !== old && _batchSportArr(old).length > 1)
-    ? `\n\nNote: "${old}" is used by ${_batchSportArr(old).length} sports. Since students only store one batch name, renaming it will rename it for ALL of those sports at once.`
-    : '';
-
-  confirm_('✏️','Save Batch',`Update batch "${old}"?${renameWarning}`, () => {
+  confirm_('✏️','Save Batch',`Update batch "${old}"?`, () => {
     // Rename if changed
     if (newName !== old) {
       DB.students.forEach(s => { if (s.batch === old) s.batch = newName; });
@@ -10596,14 +10385,15 @@ function saveEditBatch() {
       (DB.enrollments || []).forEach(e => { if (e.batch === old) e.batch = newName; });
       sbRenameBatch(old, newName);
     }
-    // Update sport mapping (full replace with whatever's checked now)
+    // Update sport mapping
     if (!DB.batchSport) DB.batchSport = {};
-    if (newSports.length) DB.batchSport[newName] = newSports;
+    if (newSport) DB.batchSport[newName] = newSport;
     else delete DB.batchSport[newName];
     sbSaveSettings();
-    addLog('batch_edit', `Batch "${old}" → "${newName}" (sports: ${newSports.join(', ')||'none'})`);
+    addLog('batch_edit', `Batch "${old}" → "${newName}" (sport: ${newSport||'none'})`);
     closeModal('modalEditBatch');
     renderSportBatch();
+    renderBatchChips('student'); renderBatchChips('att'); renderBatchChips('fee');
     showToast('Batch updated ✓','success');
   });
 }
@@ -10620,7 +10410,7 @@ function renderSportList() {
   if (!Array.isArray(DB.sports)) DB.sports = [];
   let html = '';
   DB.sports.forEach((sp, i) => {
-    const batchCount = Object.keys(DB.batchSport || {}).filter(name => batchHasSport(name, sp)).length;
+    const batchCount = Object.values(DB.batchSport || {}).filter(v => v === sp).length;
     html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <input type="text" class="form-input" id="sportInp${i}" value="${escHtml(sp)}" style="flex:1;">
       <button class="btn btn-primary btn-xs" onclick="renameSport(${i})">✓</button>
@@ -10669,7 +10459,7 @@ function renameSport(i) {
   confirm_('✏️','Rename Sport',`Rename "${old}" → "${newName}"?`, () => {
     DB.sports[i] = newName;
     // Re-point any batches that belonged to the old sport
-    Object.keys(DB.batchSport || {}).forEach(b => { const arr=_batchSportArr(b); const ix=arr.indexOf(old); if (ix!==-1) { arr[ix]=newName; DB.batchSport[b]=arr; } });
+    Object.keys(DB.batchSport || {}).forEach(b => { if (DB.batchSport[b] === old) DB.batchSport[b] = newName; });
     // Update local enrollments in memory too
     (DB.enrollments || []).forEach(e => { if (e.sport === old) e.sport = newName; });
     sbRenameSport(old, newName);
@@ -10682,7 +10472,7 @@ function renameSport(i) {
 }
 function deleteSport(i) {
   const sp = DB.sports[i];
-  const batchCount = Object.keys(DB.batchSport || {}).filter(name => batchHasSport(name, sp)).length;
+  const batchCount = Object.values(DB.batchSport || {}).filter(v => v === sp).length;
   const enrollCount = (DB.enrollments || []).filter(e => e.sport === sp).length;
   let warn = '';
   if (batchCount) warn += ` ${batchCount} batch(es) will be left without a sport.`;
@@ -10690,7 +10480,7 @@ function deleteSport(i) {
   confirm_('🗑️','Delete Sport',`Delete "${sp}"?${warn}`, () => {
     DB.sports.splice(i,1);
     // Unassign batches that pointed to this sport
-    Object.keys(DB.batchSport || {}).forEach(b => removeBatchSport(b, sp));
+    Object.keys(DB.batchSport || {}).forEach(b => { if (DB.batchSport[b] === sp) delete DB.batchSport[b]; });
     sbDeleteSport(sp);
     sbSaveSettings();
     addLog('sport_delete', `Deleted sport "${sp}"`);
@@ -10767,9 +10557,11 @@ function saveNewBatch() {
   const plan          = (DB.settings && DB.settings.plan) || 'trial';
 
   // Check batches already assigned to this specific sport
-  const batchesForThisSport = (DB.batches || []).filter(b => batchHasSport(b, sport)).length;
+  const batchesForThisSport = (DB.batches || []).filter(b =>
+    DB.batchSport && DB.batchSport[b] === sport
+  ).length;
 
-  if (perSportLimit !== null && batchesForThisSport >= perSportLimit) {
+  if (batchesForThisSport >= perSportLimit) {
     const nextPlan = plan === 'basic' ? 'Pro (10 batches per sport)' : 'Premium (20 batches per sport)';
     showToast(
       (typeof planDisplayName==='function'?planDisplayName():'Basic') +
@@ -10780,10 +10572,8 @@ function saveNewBatch() {
     return;
   }
 
-  // Total batch limit — counts every (name, sport) pairing, not just unique names,
-  // since the same name can now be reused across multiple sports.
-  const totalInstances = (DB.batches || []).reduce((sum, b) => sum + _batchSportArr(b).length, 0);
-  if (totalLimit !== null && totalInstances >= totalLimit) {
+  // Also check total batch limit
+  if (totalLimit !== null && (DB.batches||[]).length >= totalLimit) {
     const nextPlan = plan === 'basic' ? 'Pro (100 total batches)' : 'Premium (400 total batches)';
     showPlanLimitToast('total batches', totalLimit, nextPlan);
     setTimeout(() => { if (typeof fzOpenPlans === 'function') fzOpenPlans(); }, 800);
@@ -10791,25 +10581,18 @@ function saveNewBatch() {
   }
 
   if (DB.batches.length >= 400) { showToast('Maximum batches reached','error'); return; }
-
-  const alreadyExists = DB.batches.includes(name);
-  if (alreadyExists && batchHasSport(name, sport)) { showToast('Batch already exists for this sport','error'); return; }
-
-  const confirmMsg = alreadyExists
-    ? `"${name}" already exists under another sport. Add it to "${sport}" as well?\n\nNote: since students only store one batch name, renaming or deleting "${name}" later will affect it under every sport it's assigned to.`
-    : `Add batch "${name}" under sport "${sport}"?`;
-
-  confirm_('➕','Add Batch', confirmMsg, () => {
-    if (!alreadyExists) {
-      DB.batches.push(name);
-      sbAddBatch(name, DB.batches.length - 1);
-    }
-    addBatchSport(name, sport);
+  if (DB.batches.includes(name)) { showToast('Batch already exists','error'); return; }
+  confirm_('➕','Add Batch',`Add batch "${name}" under sport "${sport}"?`, () => {
+    DB.batches.push(name);
+    if (!DB.batchSport) DB.batchSport = {};
+    DB.batchSport[name] = sport;
+    sbAddBatch(name, DB.batches.length - 1);
     sbSaveSettings(); // persist the batch→sport mapping
     addLog('batch_add', `Added batch "${name}" (sport: ${sport})`);
     closeModal('modalAddBatch');
     renderBatchList();
     renderSportBatch();
+    renderBatchChips('student'); renderBatchChips('att'); renderBatchChips('fee');
     showToast('Batch added ✓','success');
   });
 }
@@ -10829,15 +10612,14 @@ function renameBatch(i) {
     sbSaveSettings();
     addLog('batch_rename', `"${old}" → "${newName}"`);
     renderBatchList();
+    renderBatchChips('student'); renderBatchChips('att'); renderBatchChips('fee');
     showToast('Renamed ✓','success');
   });
 }
 function deleteBatch(i) {
   const old = DB.batches[i];
   const cnt = DB.students.filter(s => s.batch===old).length;
-  const sportsUsingIt = _batchSportArr(old);
-  const warn = sportsUsingIt.length > 1 ? ` This name is also used by ${sportsUsingIt.length} sports — deleting it removes it from all of them.` : '';
-  confirm_('🗑️','Delete Batch',`Delete "${old}"? ${cnt} students will be moved to first available batch.${warn}`, () => {
+  confirm_('🗑️','Delete Batch',`Delete "${old}"? ${cnt} students will be moved to first available batch.`, () => {
     const fallback = DB.batches.filter((_,j)=>j!==i)[0] || '';
     DB.students.forEach(s => { if (s.batch===old) s.batch=fallback; });
     DB.batches.splice(i,1);
@@ -10846,6 +10628,7 @@ function deleteBatch(i) {
     sbSaveSettings();
     addLog('batch_delete', `Deleted batch "${old}"`);
     renderBatchList();
+    renderBatchChips('student'); renderBatchChips('att'); renderBatchChips('fee');
     showToast('Deleted','success');
   });
 }
@@ -11411,16 +11194,18 @@ function saveNote() {
 // feature: 'reports' | 'bulk_import' | 'whatsapp'
 function gatedFeature(feature, fnName, args) {
   const plan = (DB.settings && DB.settings.plan) || 'trial';
+  // Trial is a Premium-tier trial — unlock the same feature set as Pro/Premium
+  const proPlans = ['pro', 'premium', 'trial'];
   const featureMap = {
-    reports:     { label: 'PDF & Excel reports',  upgrade: 'Pro' },
-    bulk_import: { label: 'Bulk import / export',  upgrade: 'Pro' },
-    whatsapp:    { label: 'WhatsApp reports',       upgrade: 'Pro' },
-    performance: { label: 'Performance tracking',  upgrade: 'Pro' },
-    schedules:   { label: 'Staff scheduling',       upgrade: 'Premium' },
+    reports:     { plans: proPlans, label: 'PDF & Excel reports',    upgrade: 'Pro' },
+    bulk_import: { plans: proPlans, label: 'Bulk import / export',   upgrade: 'Pro' },
+    whatsapp:    { plans: proPlans, label: 'WhatsApp reports',        upgrade: 'Pro' },
+    performance: { plans: proPlans, label: 'Performance tracking',   upgrade: 'Pro' },
+    schedules:   { plans: proPlans, label: 'Staff scheduling',        upgrade: 'Premium' },
   };
   const gate = featureMap[feature];
   if (!gate) { window[fnName] && window[fnName](...args); return; }
-  if (_fzHasAccess(plan, feature)) {
+  if (gate.plans.includes(plan)) {
     // Plan allows it — call the function (no eval, use window scope safely)
     const fn = window[fnName];
     if (typeof fn === 'function') fn(...args);
@@ -11442,6 +11227,7 @@ function downloadAttendance(fmt) {
   const viewType = document.getElementById('attViewType').value;
   const batch = selectedBatch.att;
   const searchQ = (document.getElementById('attSearch')?.value || '').trim().toLowerCase();
+  const statusFilter = document.getElementById('attStatusFilter')?.value || 'all';
 
   const sp = attCurrentSport();
   const _spSids = sp === 'ALL'
@@ -11456,6 +11242,9 @@ function downloadAttendance(fmt) {
     const dayData = attDayMap(dk);
     const classDay = isClassDay(dk);
     let enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), parseInt(d)));
+    // Apply status filter
+    if (statusFilter === 'present') enrolled = enrolled.filter(s => dayData[s.id]==='P');
+    else if (statusFilter === 'absent') enrolled = enrolled.filter(s => dayData[s.id]==='A' || (!dayData[s.id] && classDay));
     const headers = ['Name','Batch','Status'];
     const rows = enrolled.map(s => {
       const v = dayData[s.id];
@@ -11473,6 +11262,9 @@ function downloadAttendance(fmt) {
     const prefix = `${y}-${pad(m)}-`;
     const classDays = Object.keys(DB.attendance).filter(k=>k.startsWith(prefix)&&isClassDay(k)).sort();
     let enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), 0));
+    // Apply status filter for month view
+    if (statusFilter === 'present') enrolled = enrolled.filter(s => studentAttendedMonth(s.id, parseInt(y), parseInt(m)));
+    else if (statusFilter === 'absent') enrolled = enrolled.filter(s => !studentAttendedMonth(s.id, parseInt(y), parseInt(m)));
     const headers = ['Name','Batch','Present Days','Absent Days','Leave Days','Present Dates'];
     const rows = enrolled.map(s => {
       let p=0,a=0,l=0,dates=[];
@@ -11765,7 +11557,7 @@ window.addEventListener('resize', () => {
   if (pg && pg.classList.contains('active')) renderChartMax();
 });
 
-// ── Session Management: 10-minute inactivity timeout ──────────────
+// ── Session Management: 30-minute inactivity timeout ──────────────
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in ms
 
 function touchSession() {
@@ -11799,70 +11591,6 @@ setInterval(() => {
   } catch(e) {}
 }, 60000);
 
-// ── Closed/backgrounded timeout: force a real re-login if the app was closed
-// or backgrounded for more than 15 minutes (separate from the 10-min idle-while-open check) ──
-const CLOSED_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-
-function markHiddenNow() {
-  try { localStorage.setItem('sac_hidden_time', String(Date.now())); } catch(e) {}
-}
-function clearHiddenMark() {
-  try { localStorage.removeItem('sac_hidden_time'); } catch(e) {}
-}
-// True if the stored "went hidden" timestamp is older than CLOSED_TIMEOUT.
-// Also clears the marker either way once checked, so it doesn't get re-checked stale.
-function _closedTooLong() {
-  let expired = false;
-  try {
-    const hiddenAt = parseInt(localStorage.getItem('sac_hidden_time') || '0', 10);
-    if (hiddenAt && (Date.now() - hiddenAt > CLOSED_TIMEOUT)) expired = true;
-  } catch(e) {}
-  clearHiddenMark();
-  return expired;
-}
-function forceReLogin(reason) {
-  try {
-    clearSession();
-    clearHiddenMark();
-    currentUser = null;
-    _appLaunched = false;
-    if (typeof stopRealtimeSync === 'function') stopRealtimeSync();
-    if (window._sbSignOut) window._sbSignOut().catch(()=>{});
-    const appEl = document.getElementById('app');
-    if (appEl) appEl.classList.remove('active');
-    const loginEl = document.getElementById('loginScreen');
-    if (loginEl) loginEl.style.display = 'flex';
-    const idEl = document.getElementById('loginId'); if (idEl) idEl.value = '';
-    const passEl = document.getElementById('loginPass'); if (passEl) passEl.value = '';
-    if (reason && typeof showToast === 'function') showToast(reason, 'warn');
-  } catch(e) {}
-}
-// Record the moment the app goes into the background/hidden (tab switch, app
-// backgrounded, or closed) — and re-check on return in case the app stayed open.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    markHiddenNow();
-  } else if (document.visibilityState === 'visible' && currentUser) {
-    if (_closedTooLong()) {
-      forceReLogin('Signed out — the app was closed for a while. Please log in again.');
-    } else {
-      // Short gap (tab switch, screen lock, app backgrounded) — mobile browsers
-      // commonly drop the realtime WebSocket while backgrounded and don't
-      // auto-resubscribe reliably. Force a fresh data pull + realtime restart
-      // on every resume so the view can't silently go stale.
-      if (typeof stopRealtimeSync === 'function') stopRealtimeSync();
-      if (typeof loadAllData === 'function') {
-        loadAllData().then(() => {
-          if (typeof refreshCurrentPage === 'function') refreshCurrentPage();
-          if (typeof startRealtimeSync === 'function') startRealtimeSync();
-        }).catch(e => console.warn('resume refresh failed:', e));
-      }
-    }
-  }
-});
-// Extra safety net: some mobile browsers/webviews skip visibilitychange on a hard close
-window.addEventListener('pagehide', markHiddenNow);
-
 // Auto-login: Supabase persists the session in localStorage automatically.
 // onAuthStateChanged fires on page load if the user is still signed in.
 (function waitForAuth() {
@@ -11872,9 +11600,6 @@ window.addEventListener('pagehide', markHiddenNow);
     // Supabase fires this on token refresh / tab focus too. Only launch once;
     // ignore later events if the app is already running.
     if (_appLaunched || currentUser) return;
-    // If the app was closed/backgrounded for more than 15 minutes, require a fresh
-    // login instead of silently auto-signing back in.
-    if (_closedTooLong()) { forceReLogin(); return; }
     // Refresh the session timestamp on every page load/refresh.
     // The setInterval handles inactivity while the app is open.
     // Never sign out on refresh — that is intentional user activity.
@@ -11930,7 +11655,7 @@ window.addEventListener('pagehide', markHiddenNow);
               const _fsel2 = document.getElementById('fzFrozenScreen');
               if (_fsel2) {
                 document.body.style.overflow = 'hidden';
-                _fsel2.style.cssText = 'display:flex !important;position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#0f1f3d,#1a1040,#0a1628);align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:Poppins,sans-serif;';
+                _fsel2.style.cssText = 'display:flex !important;position:fixed;inset:0;z-index:2147483647;background:linear-gradient(135deg,#0f1f3d,#1a1040,#0a1628);align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:Poppins,sans-serif;';
                 const _kind2 = _fp2 === 'frozen' ? 'manual' : (_fp2 === 'trial' ? 'trial' : 'plan');
                 const _titles2 = {trial:'Your Free Trial Has Ended',plan:'Your Subscription Has Expired',manual:'Your Account Is On Hold'};
                 const _badges2 = {trial:'Free Trial Ended',plan:'Subscription Expired',manual:'Account On Hold'};
@@ -12005,7 +11730,7 @@ function perfGetAllowedSports() {
 function perfGetAllowedBatches(sport) {
   const all = Array.isArray(DB.batches) ? DB.batches : [];
   let filtered = sport && sport !== 'ALL'
-    ? all.filter(b => batchHasSport(b, sport) || !_batchSportArr(b).length)
+    ? all.filter(b => (DB.batchSport[b] || '') === sport || !DB.batchSport[b])
     : all;
   if (!isAdmin()) {
     const u = currentUser;
@@ -12338,8 +12063,8 @@ function renderSchedulesList() {
     html += `
     <div class="card" style="padding:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:14px;">${escHtml(sched.name)}</div>
+        <div style="flex:1;cursor:pointer;" onclick="viewScheduleLeaderboard('${escHtml(sched.id)}')">
+          <div style="font-weight:700;font-size:14px;">${escHtml(sched.name)} <span style="font-size:10px;color:var(--accent2);">▶ View</span></div>
           <div style="font-size:11px;color:var(--gray);">${escHtml(sched.sport||'All Sports')}${sched.batch ? ' · ' + escHtml(sched.batch) : ' · All Batches'} · Max: ${maxM} marks</div>
         </div>
         ${isAdmin() ? `<div style="display:flex;gap:6px;">
@@ -12357,6 +12082,13 @@ function renderSchedulesList() {
     </div>`;
   });
   return html;
+}
+
+function viewScheduleLeaderboard(schedId) {
+  // Schedule-specific filtering removed along with the dropdown;
+  // just switch to the (combined) leaderboard view.
+  _perfView = 'leaderboard';
+  renderPerformancePage();
 }
 
 // ── Open student score detail ────────────────────────────────────
@@ -12473,7 +12205,7 @@ function _populateSchedBatch(selectedSport, selectedBatch) {
     bt.disabled = true;
     return;
   }
-  const batches = (DB.batches || []).filter(b => batchHasSport(b, selectedSport));
+  const batches = (DB.batches || []).filter(b => (DB.batchSport && DB.batchSport[b]) === selectedSport);
   bt.innerHTML = '<option value="">Select Batch</option>' +
     batches.map(b => `<option value="${escHtml(b)}" ${b === selectedBatch ? 'selected' : ''}>${escHtml(b)}</option>`).join('');
   bt.disabled = false;
@@ -12807,7 +12539,7 @@ function onClassLogSportChange() {
   const bSel = document.getElementById('classLogBatch');
   if (!bSel) return;
   const staffBatches = getStaffBatches();
-  let batches = DB.batches.filter(b => batchHasSport(b, sp));
+  let batches = DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sp);
   if (staffBatches.length) batches = batches.filter(b => staffBatches.includes(b));
   bSel.innerHTML = batches.length
     ? batches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('')
@@ -13017,7 +12749,7 @@ function onClassLogSportFilterChange() {
   const fSel = document.getElementById('classLogFilterBatch');
   if (fSel) {
     const staffBatches = getStaffBatches();
-    let batches = sp ? DB.batches.filter(b => batchHasSport(b, sp)) : DB.batches;
+    let batches = sp ? DB.batches.filter(b => (DB.batchSport && DB.batchSport[b]) === sp) : DB.batches;
     if (staffBatches.length) batches = batches.filter(b => staffBatches.includes(b));
     fSel.innerHTML = '<option value="">All Batches</option>' +
       batches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
@@ -13123,7 +12855,7 @@ function populateBatchAssignCheckboxes(assigned, limitSports) {
   let batches = DB.batches;
   // If sports are selected, only show batches in those sports
   if (Array.isArray(limitSports) && limitSports.length) {
-    batches = DB.batches.filter(b => limitSports.some(lsp => batchHasSport(b, lsp)));
+    batches = DB.batches.filter(b => limitSports.includes((DB.batchSport && DB.batchSport[b]) || ''));
   }
   if (!batches.length) {
     wrap.innerHTML = '<span style="font-size:12px;color:var(--gray);">Select a sport above to see its batches.</span>';
@@ -13451,8 +13183,9 @@ function closeTabMenu() {
 // ══════════════════════════════════════════════════════════════════
 
 let _schedEditId = null;
-let _schedView = 'month';        // 'month' | 'day' | 'list'
+let _schedView = 'month';        // 'month' | 'week' | 'day' | 'list'
 let _schedMonthDate = '';        // any ISO date within the displayed month
+let _schedWeekFrom  = '';        // ISO date of the Monday of the displayed week
 let _schedDayDate   = '';        // ISO date of the displayed day
 let _schedNavLock   = false;     // guards against double tap-fire on nav buttons
 
@@ -13529,7 +13262,7 @@ function renderSchedulesPage() {
   const adminBtns = document.getElementById('schedPageAdminBtns');
   if (adminBtns) adminBtns.style.display = isAdm ? '' : 'none';
   const leaveBtn = document.getElementById('schedStaffLeaveBtn');
-  if (leaveBtn) leaveBtn.style.display = '';
+  if (leaveBtn) leaveBtn.style.display = isAdm ? 'none' : '';
   const staffLeaveCountBtn = document.getElementById('schedStaffLeaveCountBtn');
   if (staffLeaveCountBtn) staffLeaveCountBtn.style.display = isAdm ? 'none' : '';
 
@@ -13681,6 +13414,52 @@ function initMonthSwipe() {
 }
 
 // ── WEEK VIEW ────────────────────────────────────────────────────
+function schedNavWeek(mon) {
+  _navOnce(() => {
+    _schedWeekFrom = mon;
+    renderSchedulesPage();
+  });
+}
+function renderSchedWeekView(tasks, from, isAdm) {
+  const to = addDays(from, 6);
+  const weekTasks = tasks.filter(t => t.date >= from && t.date <= to);
+
+  const cols = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(from, i);
+    const dayTasks = weekTasks.filter(t => t.date === d);
+    const isToday = d === todayIso();
+
+    const taskHtml = dayTasks.length
+      ? dayTasks.map(t => schedTaskChip(t, isAdm)).join('')
+      : `<div style="font-size:11px;color:var(--graydk);text-align:center;padding:12px 0;">No tasks</div>`;
+
+    cols.push(`
+      <div style="min-width:110px;flex:1;">
+        <div onclick="schedOpenDay('${d}')" style="cursor:pointer;text-align:center;padding:6px 4px;border-radius:8px;margin-bottom:8px;
+             background:${isToday ? 'var(--accent2)' : 'var(--card2)'};
+             color:${isToday ? '#fff' : 'var(--gray)'};">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">${dayName(d)}</div>
+          <div style="font-size:15px;font-weight:800;">${shortDate(d)}</div>
+        </div>
+        ${taskHtml}
+      </div>`);
+  }
+
+  const prevMon = addDays(from, -7);
+  const nextMon = addDays(from,  7);
+
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button class="btn" style="padding:5px 12px;font-size:12px;" onclick="schedNavWeek('${prevMon}')">‹ Prev</button>
+      <div style="font-size:12px;font-weight:700;color:var(--offwhite);">${shortDate(from)} – ${shortDate(to)}</div>
+      <button class="btn" style="padding:5px 12px;font-size:12px;" onclick="schedNavWeek('${nextMon}')">Next ›</button>
+    </div>
+    <div style="display:flex;gap:8px;overflow-x:scroll;overflow-y:visible;padding-bottom:8px;-webkit-overflow-scrolling:touch;touch-action:pan-x;scroll-snap-type:x mandatory;">
+      ${cols.join('')}
+    </div>`;
+}
+
 // ── DAY VIEW ─────────────────────────────────────────────────────
 function schedNavDay(n) {
   _navOnce(() => {
@@ -13972,9 +13751,10 @@ function onTsSportChange(preselBatch) {
   const sport = document.getElementById('tsSport')?.value || '';
   const batchEl = document.getElementById('tsBatch');
   if (!batchEl) return;
+  const batchSport = DB.batchSport || {};
   const batches = sport
-    ? (DB.batches || []).filter(b => batchHasSport(b, sport))
-    : (DB.batches || []);
+    ? Object.keys(batchSport).filter(b => batchSport[b] === sport)
+    : Object.keys(batchSport);
   batchEl.innerHTML = '<option value="">— Any batch —</option>' +
     batches.map(b => `<option value="${_esc(b)}" ${b===preselBatch?'selected':''}>${_esc(b)}</option>`).join('');
 }
@@ -14593,9 +14373,9 @@ function renderLeaveCountPage() {
   if (isAdm) {
     const staffSel = document.getElementById('leaveCountStaffFilter');
     if (staffSel && staffSel.options.length <= 1) {
-      const staff = (DB.users||[]).filter(u => u.role === 'staff' || u.role === 'admin');
+      const staff = (DB.users||[]).filter(u => u.role === 'staff');
       staffSel.innerHTML = '<option value="ALL">👥 All Staff</option>' +
-        staff.map(u => `<option value="${_esc(u.id)}">${_esc(u.name||u.id)}${u.role==='admin'?' (Admin)':''}</option>`).join('');
+        staff.map(u => `<option value="${_esc(u.id)}">${_esc(u.name||u.id)}</option>`).join('');
     }
   }
 
@@ -15417,6 +15197,161 @@ function initNotifSystem() {
 .fz-contact-sep{width:0.5px;height:40px;background:#e2e8f0;flex-shrink:0;margin-top:5px;}
 .fz-plans-slogan{text-align:center;font-size:11px;color:#94a3b8;margin-top:12px;font-style:italic;}
 
+/* ── Stars ── */
+.fz-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.fz-star-dot{position:absolute;background:#fff;border-radius:50%;animation:fzTwinkle ease-in-out infinite;}
+@keyframes fzTwinkle{0%,100%{opacity:.05;transform:scale(.4);}50%{opacity:.6;transform:scale(1);}}
+
+/* ── Layout ── */
+.fz-frozen-wrap{
+  position:relative;z-index:2;width:100%;max-width:420px;
+  display:flex;flex-direction:column;align-items:center;
+  animation:fzFadeUp .45s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes fzFadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Reason banner ── */
+.fz-reason-banner{
+  width:100%;margin-bottom:14px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:16px;padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.fz-reason-icon-wrap{
+  width:40px;height:40px;flex-shrink:0;
+  background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+}
+.fz-reason-banner-text{flex:1;min-width:0;}
+.fz-reason-banner-title{font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:2px;}
+.fz-reason-banner-sub{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4;}
+.fz-reason-banner-sub span{color:#fbbf24;font-weight:700;}
+
+/* ── Status badge ── */
+.fz-frozen-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);
+  color:#fca5a5;font-size:10px;font-weight:800;letter-spacing:1px;
+  padding:5px 14px;border-radius:20px;margin-bottom:14px;text-transform:uppercase;
+}
+.fz-badge-dot{width:6px;height:6px;background:#f87171;border-radius:50%;animation:fzPulse 1.5s ease infinite;}
+@keyframes fzPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+
+/* ── Main card ── */
+.fz-frozen-card{
+  background:#fff;border-radius:20px;width:100%;overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* ── Card header ── */
+.fz-frozen-card-top{
+  padding:28px 24px 24px;text-align:center;
+  background:linear-gradient(160deg,#b91c1c 0%,#dc2626 45%,#ef4444 100%);
+  position:relative;overflow:hidden;
+}
+.fz-frozen-card-top::before{
+  content:'';position:absolute;width:300px;height:300px;
+  background:rgba(255,255,255,.05);border-radius:50%;
+  top:-120px;right:-80px;pointer-events:none;
+}
+.fz-frozen-card-top::after{
+  content:'';position:absolute;width:200px;height:200px;
+  background:rgba(0,0,0,.06);border-radius:50%;
+  bottom:-80px;left:-50px;pointer-events:none;
+}
+.fz-frozen-icon-wrap{
+  width:68px;height:68px;
+  background:rgba(255,255,255,.18);
+  border:1.5px solid rgba(255,255,255,.3);
+  border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;position:relative;z-index:1;
+  box-shadow:0 8px 20px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.fz-frozen-emoji{display:none;} /* hidden — use SVG instead */
+.fz-frozen-icon-svg{flex-shrink:0;}
+.fz-frozen-title{
+  font-size:20px;font-weight:800;color:#fff;
+  margin-bottom:8px;line-height:1.25;
+  position:relative;z-index:1;
+  text-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.fz-frozen-subtitle{
+  font-size:12.5px;color:rgba(255,255,255,.78);
+  line-height:1.6;position:relative;z-index:1;
+  max-width:300px;margin:0 auto;
+}
+
+/* ── Card body ── */
+.fz-frozen-card-body{padding:20px 22px 22px;}
+
+/* ── Data safe strip ── */
+.fz-data-safe{
+  display:flex;align-items:flex-start;gap:10px;
+  background:#f0fdf4;
+  border:1px solid #bbf7d0;border-left:3px solid #22c55e;
+  border-radius:10px;padding:11px 14px;margin-bottom:16px;
+}
+.fz-data-safe-icon{flex-shrink:0;margin-top:1px;}
+.fz-data-safe-text{font-size:12px;color:#15803d;line-height:1.5;}
+.fz-data-safe-text b{font-weight:700;font-size:12.5px;display:block;margin-bottom:2px;color:#166534;}
+
+/* ── Stats ── */
+.fz-frozen-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.fz-frozen-stat-tile{
+  background:#f8fafc;border:1px solid #e2e8f0;
+  border-radius:10px;padding:12px 6px;text-align:center;
+}
+.fz-frozen-stat-val{font-size:20px;font-weight:800;color:#0f172a;line-height:1;}
+.fz-frozen-stat-label{font-size:9px;color:#94a3b8;font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ── Divider ── */
+.fz-frozen-divider{
+  font-size:10px;color:#94a3b8;font-weight:800;
+  margin-bottom:12px;letter-spacing:.8px;text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+}
+.fz-frozen-divider::before,.fz-frozen-divider::after{content:'';flex:1;height:1px;background:#e2e8f0;}
+
+/* ── Buttons ── */
+.fz-frozen-actions{display:flex;flex-direction:column;gap:8px;}
+.fz-frozen-btn-primary{
+  background:linear-gradient(135deg,#dc2626,#b91c1c);
+  color:#fff;padding:15px;border:none;border-radius:12px;
+  font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;
+  width:100%;letter-spacing:.2px;
+  box-shadow:0 4px 16px rgba(220,38,38,.4);
+  transition:transform .15s,box-shadow .15s;
+}
+.fz-frozen-btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(220,38,38,.45);}
+.fz-frozen-btn-primary:active{transform:translateY(0);}
+.fz-frozen-btn-wa{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:#fff;padding:13px;border:none;border-radius:12px;
+  font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 4px 12px rgba(34,197,94,.25);
+}
+.fz-frozen-btn-wa:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(34,197,94,.35);}
+.fz-frozen-btn-secondary{
+  background:transparent;color:#64748b;
+  padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  width:100%;transition:all .15s;
+}
+.fz-frozen-btn-secondary:hover{background:#f1f5f9;border-color:#cbd5e1;color:#475569;}
+
+/* ── Footer note ── */
+.fz-frozen-note{
+  margin-top:16px;font-size:11px;color:rgba(255,255,255,.32);
+  text-align:center;line-height:1.8;
+}
+.fz-frozen-note a{color:rgba(255,255,255,.5);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:1px;}
+.fz-frozen-note a:hover{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.5);}
+
 </style>
 
 <!-- ============ FROZEN SCREEN ============ -->
@@ -15625,44 +15560,6 @@ function initNotifSystem() {
       _fzAppConfig = cfgRes.data || null;
       _fzPlans     = plansRes.data || [];
 
-      // ── Build a global lookup of live plan limits, keyed by plan code ──
-      // planStudentLimit()/planStaffLimit()/etc read this map first, and
-      // only fall back to hardcoded defaults if the table hasn't loaded yet.
-      if (_fzPlans.length) {
-        const map = {};
-        _fzPlans.forEach(p => {
-          map[p.code] = {
-            student_limit:           p.student_limit,
-            staff_limit:             p.staff_limit,
-            sport_limit:             p.sport_limit,
-            batches_per_sport_limit: p.batches_per_sport_limit,
-            batch_limit:             p.batch_limit,
-            snapshot_days:           p.snapshot_days
-          };
-        });
-        // 'trial' has no row of its own — mirror premium's limits, same as before
-        if (map.premium && !map.trial) map.trial = map.premium;
-        window._fzPlanLimits = map;
-
-        // ── Build a global lookup of live access flags, keyed by plan code ──
-        // gatedFeature()/applyRoleUI()/switchPage() read this map first, and
-        // only fall back to hardcoded defaults if the table hasn't loaded yet.
-        const accessMap = {};
-        _fzPlans.forEach(p => {
-          accessMap[p.code] = {
-            enquiry:     p.has_enquiry,
-            activity:    p.has_activity,
-            performance: p.has_performance,
-            schedules:   p.has_schedules,
-            reports:     p.has_reports,
-            bulk_import: p.has_bulk_import,
-            whatsapp:    p.has_whatsapp
-          };
-        });
-        if (accessMap.premium && !accessMap.trial) accessMap.trial = accessMap.premium;
-        window._fzPlanAccess = accessMap;
-      }
-
       // ── Sync plan into DB.settings so applyRoleUI() reads the latest ──
       if (_fzAcademy && window.DB && window.DB.settings) {
         const newPlan = _fzAcademy.plan || 'trial';
@@ -15847,6 +15744,7 @@ function initNotifSystem() {
       features:[
         {text:'Everything in Basic', lim:'250 students · 4 staff'},
         {text:'WhatsApp fee reminders'},
+        {text:'WhatsApp attendance reports'},
         {text:'Bulk import / export · PDF & Excel'},
         {text:'Enquiry & lead management'},
         {text:'Class log & activity audit'},
@@ -15878,51 +15776,10 @@ function initNotifSystem() {
     document.body.style.overflow = '';
   }
 
-  // Builds "Up to X students" style lines straight from the plan's numeric
-  // DB columns, so the banner text can never drift from what's enforced.
-  function _fzNumericLines(p) {
-    const lines = [];
-    const raw = k => p[k]; // undefined = column missing/not loaded, null = unlimited
-
-    if (raw('student_limit') !== undefined) {
-      lines.push(raw('student_limit') === null ? 'Unlimited students' : `Up to ${raw('student_limit')} students`);
-    }
-    if (raw('staff_limit') !== undefined) {
-      lines.push(raw('staff_limit') === null ? 'Unlimited staff users' : `Up to ${raw('staff_limit')} staff users`);
-    }
-    if (raw('sport_limit') !== undefined || raw('batches_per_sport_limit') !== undefined) {
-      const sp = raw('sport_limit'), bps = raw('batches_per_sport_limit');
-      if (sp === null && bps === null) lines.push('Unlimited sports & batches');
-      else lines.push(`${sp ?? '—'} sport(s) · ${bps ?? '—'} batches per sport`);
-    }
-    if (raw('snapshot_days') !== undefined && raw('snapshot_days') !== null) {
-      lines.push(`${raw('snapshot_days')}-day data snapshots`);
-    }
-    return lines;
-  }
-
-  // Builds tab/feature-access bullet lines straight from the plan's
-  // boolean DB columns — only shows a line when that plan's flag is true,
-  // so this can never drift from what applyRoleUI()/gatedFeature() enforce.
-  const _FZ_ACCESS_LABELS = {
-    has_enquiry:     'Enquiry & lead management',
-    has_activity:    'Class activity log & audit trail',
-    has_performance: 'Performance tracking & leaderboards',
-    has_schedules:   'Staff scheduling & leave management',
-    has_reports:     'PDF & Excel reports',
-    has_bulk_import: 'Bulk import / export',
-    has_whatsapp:    'WhatsApp reports & reminders'
-  };
-  function _fzAccessLines(p) {
-    return Object.keys(_FZ_ACCESS_LABELS)
-      .filter(key => p[key] === true)
-      .map(key => _FZ_ACCESS_LABELS[key]);
-  }
-
   function fzRenderPlans() {
     const plans = (_fzPlans && _fzPlans.length) ? _fzPlans.map(p=>({
       code:p.code, name:p.name, is_recommended:p.is_recommended, tagline:p.tagline||'',
-      features:[..._fzNumericLines(p), ..._fzAccessLines(p), ...(p.highlights||[])].map(h=>({text:h})), ideal:''
+      features:(p.highlights||[]).map(h=>({text:h})), ideal:''
     })) : _fzDefaultPlans;
 
     document.getElementById('fzPlansGrid').innerHTML = plans.map(p => {
@@ -16092,6 +15949,7 @@ function initNotifSystem() {
   window.fzReloadStatus = fzLoadStatus;  // call this after admin actions if needed
 })();
 </script>
+
 
 </body>
 </html>
