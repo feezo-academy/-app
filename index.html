@@ -4075,6 +4075,25 @@ let hasLoadedRemote = false;
 const sb = () => window._sb;
 const acadId = () => _currentAcademyId;
 
+// Supabase caps unpaginated selects at 1000 rows by default. Tables that grow
+// large over time (attendance, fees — one row per student per day/month) can
+// silently lose the newest rows once the table passes that cap. This fetches
+// every page so nothing gets dropped as the table grows.
+async function fetchAllPaged(table, aid, orderFn) {
+  const pageSize = 1000;
+  let from = 0;
+  let all = [];
+  while (true) {
+    let q = sb().from(table).select('*').eq('academy_id', aid);
+    if (orderFn) q = orderFn(q);
+    const { data, error } = await q.range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    all = all.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: all, error: null };
+}
 async function loadAllData() {
   try {
     const aid = acadId();
@@ -4090,12 +4109,10 @@ async function loadAllData() {
       sb().from('app_users').select('*').eq('academy_id', aid),
       sb().from('batches').select('*').eq('academy_id', aid).order('sort_order'),
       sb().from('students').select('*').eq('academy_id', aid),
-      sb().from('attendance').select('*').eq('academy_id', aid),
-      sb().from('fees').select('*').eq('academy_id', aid),
+      fetchAllPaged('attendance', aid),
+      fetchAllPaged('fees', aid),
       sb().from('enquiries').select('*').eq('academy_id', aid),
-      sb().from('class_log').select('*').eq('academy_id', aid),
-      // Fetch audit_log within plan retention window (3/6/9 months)
-      // plan not loaded yet at this point so use a safe 270-day max; filtered again on render
+      fetchAllPaged('class_log', aid),
       sb().from('audit_log').select('*').eq('academy_id', aid)
         .gte('created_at', new Date(Date.now() - 270*24*60*60*1000).toISOString())
         .order('created_at', { ascending: false }).limit(1000),
@@ -4104,7 +4121,7 @@ async function loadAllData() {
       sb().from('sports').select('*').eq('academy_id', aid).order('sort_order'),
       sb().from('enrollments').select('*').eq('academy_id', aid),
       sb().from('leave_requests').select('*').eq('academy_id', aid).order('applied_at', { ascending: false }),
-      sb().from('week_schedules').select('*').eq('academy_id', aid).order('date', { ascending: true })
+      fetchAllPaged('week_schedules', aid, q => q.order('date', { ascending: true }))
     ]);
 
     // --- settings (from academies row) ---
